@@ -1,4 +1,6 @@
 #[macro_use] extern crate chomp;
+extern crate crypto;
+extern crate rayon;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -8,7 +10,7 @@ fn get_input(mod_name: &str) -> String {
     let mut f = File::open(path).unwrap();
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
-    s
+    s.trim().to_string()
 }
 
 macro_rules! run_day {
@@ -26,4 +28,5 @@ fn main() {
     run_day!(day1);
     run_day!(day2);
     run_day!(day3);
+    run_day!(day4);
 }
