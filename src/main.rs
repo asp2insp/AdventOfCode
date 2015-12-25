@@ -30,5 +30,6 @@ fn main() {
     // run_day!(day3);
     // run_day!(day4);
     // run_day!(day5);
-    run_day!(day6);
+    // run_day!(day6);
+    run_day!(day7);
 }
