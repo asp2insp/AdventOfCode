@@ -6,4 +6,3 @@ authors = ["Josiah Gaskin <josiah@optimizely.com>"]
 [dependencies]
 chomp = "0.2.1"
 rust-crypto = "0.2.34"
-rayon = { git = "https://github.com/nikomatsakis/rayon" }

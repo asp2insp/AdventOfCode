@@ -1,6 +1,5 @@
 #[macro_use] extern crate chomp;
 extern crate crypto;
-extern crate rayon;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -31,5 +30,6 @@ fn main() {
     // run_day!(day4);
     // run_day!(day5);
     // run_day!(day6);
-    run_day!(day7);
+    // run_day!(day7);
+    run_day!(day8);
 }

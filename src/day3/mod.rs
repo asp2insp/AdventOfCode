@@ -34,7 +34,7 @@ pub fn part2(input: String) -> String {
 	let mut coord2 = (0, 0);
 	let positions1 = input.chars()
 	.enumerate()
-	.filter(|pair| pair.0 % 2 == 0)
+	.filter(|pair| pair.0 % 2 == 0) // Should have used partition here!
 	.map(char_to_move).map(|m| {
 		coord1 = (coord1.0 + m.0, coord1.1 + m.1);
 		coord1
