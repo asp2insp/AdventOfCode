@@ -20,5 +20,9 @@ pub fn part1(input: String) -> String {
 
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+	let mut s = input.clone();
+	for _ in 0..50 {
+		s = look_and_say(s);
+	}
+	format!("{}", s.len())
 }
