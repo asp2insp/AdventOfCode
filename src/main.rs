@@ -1,6 +1,8 @@
 #[macro_use] extern crate chomp;
 extern crate crypto;
 extern crate itertools;
+extern crate serde_json;
+
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -35,5 +37,7 @@ fn main() {
     // run_day!(day8);
     // run_day!(day9);
     // run_day!(day10);
-    run_day!(day11);
+    // run_day!(day11);
+    run_day!(day12);
+
 }
