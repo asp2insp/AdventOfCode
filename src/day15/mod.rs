@@ -60,7 +60,7 @@ fn all_ingredients(i: Input<u8>) -> U8Result<Vec<Ingredient>> {
 	}
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq)]
 struct Ingredient {
 	name: String,
 	capacity: i64,
@@ -68,6 +68,18 @@ struct Ingredient {
 	flavor: i64,
 	texture: i64,
 	calories: i64,
+}
+
+impl PartialEq for Ingredient {
+	fn eq(&self, other: &Ingredient) -> bool {
+		self.name == other.name
+	}
+}
+
+impl Hash for Ingredient {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+		self.name.chars().next().hash(state);
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -81,14 +93,12 @@ impl Recipe {
 		let mut durability = 0i64;
 		let mut flavor = 0i64;
 		let mut texture = 0i64;
-		// let mut calories = 0i64;
 
 		for ia in &self.ingredients {
 			capacity += ia.0.capacity * ia.1;
 			durability += ia.0.durability * ia.1;
 			flavor += ia.0.flavor * ia.1;
 			texture += ia.0.texture * ia.1;
-			// calories += ia.0.calories * ia.1;
 		}
 		if capacity < 0 {
 			capacity = 0;
@@ -109,6 +119,14 @@ impl Recipe {
 	fn len(&self) -> i64 {
 		self.ingredients.values().fold(0, |sum, i| sum + i)
 	}
+
+	fn calories(&self) -> i64 {
+		let mut calories = 0i64;
+		for ia in &self.ingredients {
+			calories += ia.0.calories * ia.1;
+		}
+		calories
+	}
 }
 
 impl Hash for Recipe {
@@ -121,26 +139,56 @@ impl Hash for Recipe {
     }
 }
 
-fn best_recipe(r: &Recipe, ing: &Vec<Ingredient>, memo: &mut HashMap<Recipe, i64>) -> i64 {
-	if memo.contains_key(r) {
-		return *memo.get(r).unwrap()
-	}
-	let ret = if r.len() == 100 {
+fn best_recipe(r: &Recipe, ing: &Vec<Ingredient>) -> i64 {
+	if r.len() == 100 {
 		r.score()
 	} else {
 		let mut best = 0i64;
 		for ingredient in ing {
-			let mut nr = r.clone();
-			*nr.ingredients.get_mut(ingredient).unwrap() += 1;
-			let ns = best_recipe(&nr, ing, memo);
-			if ns > best {
-				best = ns;
+			let new_ing:Vec<Ingredient> = ing.iter()
+				.filter(|i| i.name != ingredient.name)
+				.map(|i| i.clone())
+				.collect();
+			for inum in 0..(101-r.len()) {
+				let mut nr = r.clone();
+				*nr.ingredients.get_mut(ingredient).unwrap() += inum;
+				let ns = best_recipe(&nr, &new_ing);
+				if ns > best {
+					best = ns;
+				}
 			}
 		}
 		best
-	};
-	memo.insert(r.clone(), ret);
-	ret
+	}
+}
+
+fn best_recipe_500_cals(r: &Recipe, ing: &Vec<Ingredient>) -> i64 {
+	if r.calories() > 500 {
+		0
+	} else if r.len() == 100 {
+		if r.calories() == 500 {
+			r.score()
+		} else {
+			0
+		}
+	} else {
+		let mut best = 0i64;
+		for ingredient in ing {
+			let new_ing:Vec<Ingredient> = ing.iter()
+				.filter(|i| i.name != ingredient.name)
+				.map(|i| i.clone())
+				.collect();
+			for inum in 0..(101-r.len()) {
+				let mut nr = r.clone();
+				*nr.ingredients.get_mut(ingredient).unwrap() += inum;
+				let ns = best_recipe_500_cals(&nr, &new_ing);
+				if ns > best {
+					best = ns;
+				}
+			}
+		}
+		best
+	}
 }
 
 pub fn part1(input: String) -> String {
@@ -149,15 +197,23 @@ pub fn part1(input: String) -> String {
 	for i in &ing {
 		starting_ingredients.insert(i.clone(), 0);
 	}
-	let mut memo: HashMap<Recipe, i64> = HashMap::new();
+	starting_ingredients.shrink_to_fit();
 	let m = best_recipe(&Recipe {
 			ingredients: starting_ingredients.clone(),
-		}, &ing, &mut memo);
-	println!("len memo {}", memo.len());
+		}, &ing);
 	format!("{:?}", m)
 }
 
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+	let ing = parse_only(all_ingredients, input.as_bytes()).unwrap();
+	let mut starting_ingredients: HashMap<Ingredient, i64> = HashMap::new();
+	for i in &ing {
+		starting_ingredients.insert(i.clone(), 0);
+	}
+	starting_ingredients.shrink_to_fit();
+	let m = best_recipe_500_cals(&Recipe {
+			ingredients: starting_ingredients.clone(),
+		}, &ing);
+	format!("{:?}", m)
 }
