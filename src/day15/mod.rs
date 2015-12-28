@@ -1,6 +1,8 @@
 use std::str;
 use chomp::*;
-use chomp::ascii::{skip_whitespace,signed,is_alpha,decimal};
+use chomp::ascii::{skip_whitespace,is_alpha,decimal};
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 fn alpha_string(i: Input<u8>) -> U8Result<String> {
 	parse!{i;
@@ -9,20 +11,36 @@ fn alpha_string(i: Input<u8>) -> U8Result<String> {
 	}
 }
 
+fn opt_sign(i: Input<u8>) -> U8Result<i64> {
+	option(i, |i| parse!{i;
+			token(b'-');
+			ret -1
+		},
+		1
+	)
+}
+
+fn ndecimal(i: Input<u8>) -> U8Result<i64> {
+	parse!{i;
+		let sign      = opt_sign();
+		let num: i64  = decimal();
+		ret num * sign
+	}
+}
+
 fn ingredient(i: Input<u8>) -> U8Result<Ingredient> {
-	// Sprinkles: capacity 2, durability 0, flavor -2, texture 0, calories 3
 	parse!{i;
 		let n  		   = alpha_string();
 						 string(b": capacity ");
-		let cap: i64   = signed(decimal);
+		let cap        = ndecimal();
 						 string(b", durability ");
-		let dur: i64   = signed(decimal);
+		let dur        = ndecimal();
 						 string(b", flavor ");
-		let fla: i64   = signed(decimal);
+		let fla        = ndecimal();
 						 string(b", texture ");
-		let tex: i64   = signed(decimal);
+		let tex        = ndecimal();
 						 string(b", calories ");
-		let cal: i64   = signed(decimal);
+		let cal        = ndecimal();
 				 		 skip_whitespace();
 		ret Ingredient {
 			name: n,
@@ -42,7 +60,7 @@ fn all_ingredients(i: Input<u8>) -> U8Result<Vec<Ingredient>> {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 struct Ingredient {
 	name: String,
 	capacity: i64,
@@ -52,9 +70,9 @@ struct Ingredient {
 	calories: i64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 struct Recipe {
-	ingredients: Vec<Ingredient>,
+	ingredients: HashMap<Ingredient, i64>,
 }
 
 impl Recipe {
@@ -63,14 +81,14 @@ impl Recipe {
 		let mut durability = 0i64;
 		let mut flavor = 0i64;
 		let mut texture = 0i64;
-		let mut calories = 0i64;
+		// let mut calories = 0i64;
 
 		for ia in &self.ingredients {
-			capacity += ia.capacity;
-			durability += ia.durability;
-			flavor += ia.flavor;
-			texture += ia.texture;
-			calories += ia.calories;
+			capacity += ia.0.capacity * ia.1;
+			durability += ia.0.durability * ia.1;
+			flavor += ia.0.flavor * ia.1;
+			texture += ia.0.texture * ia.1;
+			// calories += ia.0.calories * ia.1;
 		}
 		if capacity < 0 {
 			capacity = 0;
@@ -88,41 +106,55 @@ impl Recipe {
 		capacity * durability * flavor * texture
 	}
 
-	fn len(&self) -> usize {
-		self.ingredients.len()
+	fn len(&self) -> i64 {
+		self.ingredients.values().fold(0, |sum, i| sum + i)
 	}
 }
 
-fn recipies(r: &Recipe, ing: &Vec<Ingredient>) -> Vec<Recipe> {
-	if r.len() == 10 {
-		vec![r.clone()]
+impl Hash for Recipe {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+		let mut key = String::new();
+		for kv in &self.ingredients {
+			key = format!("{},{}", key, kv.1);
+		}
+		key.hash(state);
+    }
+}
+
+fn best_recipe(r: &Recipe, ing: &Vec<Ingredient>, memo: &mut HashMap<Recipe, i64>) -> i64 {
+	if memo.contains_key(r) {
+		return *memo.get(r).unwrap()
+	}
+	let ret = if r.len() == 100 {
+		r.score()
 	} else {
-		let mut v: Vec<Recipe> = Vec::new();
+		let mut best = 0i64;
 		for ingredient in ing {
 			let mut nr = r.clone();
-			nr.ingredients.push(ingredient.clone());
-			v.append(&mut recipies(&nr, ing));
+			*nr.ingredients.get_mut(ingredient).unwrap() += 1;
+			let ns = best_recipe(&nr, ing, memo);
+			if ns > best {
+				best = ns;
+			}
 		}
-		v
-	}
-}
-
-fn max(a: i64, b: i64) -> i64 {
-	if a > b {
-		b
-	} else {
-		a
-	}
+		best
+	};
+	memo.insert(r.clone(), ret);
+	ret
 }
 
 pub fn part1(input: String) -> String {
 	let ing = parse_only(all_ingredients, input.as_bytes()).unwrap();
-	let m = recipies(&Recipe {
-			ingredients: vec![],
-		}, &ing)
-		.iter()
-		.fold(0, |best, r| max(best, r.score()));
-	format!("{}", m)
+	let mut starting_ingredients: HashMap<Ingredient, i64> = HashMap::new();
+	for i in &ing {
+		starting_ingredients.insert(i.clone(), 0);
+	}
+	let mut memo: HashMap<Recipe, i64> = HashMap::new();
+	let m = best_recipe(&Recipe {
+			ingredients: starting_ingredients.clone(),
+		}, &ing, &mut memo);
+	println!("len memo {}", memo.len());
+	format!("{:?}", m)
 }
 
 
