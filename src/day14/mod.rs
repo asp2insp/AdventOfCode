@@ -1,8 +1,6 @@
 use std::str;
 use chomp::*;
 use chomp::ascii::{skip_whitespace,decimal,is_alpha};
-use permutohedron::LexicalPermutation;
-use std::collections::{HashMap,HashSet};
 
 fn alpha_string(i: Input<u8>) -> U8Result<String> {
 	parse!{i;
@@ -99,20 +97,20 @@ pub fn part1(input: String) -> String {
 			}
 		})
 		.collect();
-	for s in 0..2503 {
+	for _ in 0..2503 {
 		for t in &mut trackers {
 			t.run();
 		}
 	}
 
-	let best = trackers.iter().fold(0, |best, t| {
-		if t.distance > best {
-			t.distance
+	let best = trackers.iter().fold(("".to_string(), 0), |best, t| {
+		if t.distance > best.1 {
+			(t.reindeer.name.clone(), t.distance)
 		} else {
 			best
 		}
 	});
-	format!("{}", best)
+	format!("{:?}", best)
 }
 
 
@@ -129,7 +127,7 @@ pub fn part2(input: String) -> String {
 			}
 		})
 		.collect();
-	for s in 0..2503 {
+	for _ in 0..2503 {
 		for t in &mut trackers {
 			t.run();
 		}
@@ -146,12 +144,12 @@ pub fn part2(input: String) -> String {
 			}
 		}
 	}
-	let best = trackers.iter().fold(0, |best, t| {
-		if t.score > best {
-			t.score
+	let best = trackers.iter().fold(("".to_string(), 0), |best, t| {
+		if t.score > best.1 {
+			(t.reindeer.name.clone(), t.score)
 		} else {
 			best
 		}
 	});
-	format!("{}", best)
+	format!("{:?}", best)
 }

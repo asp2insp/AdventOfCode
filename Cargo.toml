@@ -9,3 +9,6 @@ rust-crypto = "0.2.34"
 itertools = "0.4"
 serde_json = "*"
 permutohedron = "0.2"
+
+[profile.release]
+debug = true
