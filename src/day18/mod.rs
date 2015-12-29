@@ -88,9 +88,9 @@ fn play(grid: &Vec<Vec<bool>>) -> Vec<Vec<bool>> {
 }
 
 fn is_corner(r: usize, c: usize, grid: &Vec<Vec<bool>>) -> bool {
-	if r == 0 {
-		c == 0 || c == grid.len()-1
-	} else if c == 0 {
+	if r == 0 || r == grid.len() - 1 {
+		c == 0 || c == grid[0].len()-1
+	} else if c == 0 || c == grid[0].len()-1 {
 		r == 0 || r == grid.len()-1
 	} else {
 		false
