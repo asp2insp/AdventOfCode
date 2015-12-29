@@ -34,9 +34,24 @@ fn all_rules(i: Input<u8>) -> U8Result<Vec<(String, Vec<String>)>> {
 	}
 }
 
+fn molecule(i: Input<u8>) -> U8Result<Vec<String>> {
+	parse!{i;
+		let v = many1(atom);
+		ret v
+	}
+}
+
+fn everything(i: Input<u8>) -> U8Result<(Vec<(String, Vec<String>)>, Vec<String>)> {
+	parse!{i;
+		let rules = all_rules();
+					skip_whitespace();
+		let mol   = molecule();
+		ret (rules, mol)
+	}
+}
 
 pub fn part1(input: String) -> String {
-	format!("{:?}", parse_only(all_rules, input.as_bytes()).unwrap())
+	format!("{:?}", parse_only(everything, input.as_bytes()).unwrap())
 }
 
 
