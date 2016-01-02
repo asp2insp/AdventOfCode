@@ -1,5 +1,7 @@
 use chomp::*;
 use chomp::ascii::{skip_whitespace,decimal};
+use self::Spell::*;
+use self::Effect::*;
 
 fn desc(i: Input<u8>) -> U8Result<char> {
 	parse!{i;
@@ -9,7 +11,7 @@ fn desc(i: Input<u8>) -> U8Result<char> {
 	}
 }
 
-fn boss(i: Input<u8>) -> U8Result<(usize, usize, usize)> {
+fn boss(i: Input<u8>) -> U8Result<(usize, usize)> {
 	parse!{i;
 		         		desc();
 				 	    skip_whitespace();
@@ -22,10 +24,11 @@ fn boss(i: Input<u8>) -> U8Result<(usize, usize, usize)> {
 	}
 }
 
+#[derive(Clone)]
 enum Effect {
-	Shield,
-	Poison,
-	Recharge,
+	Shielded,
+	Poisoned,
+	Recharging,
 }
 
 enum Spell {
@@ -38,13 +41,12 @@ enum Spell {
 
 impl Spell {
 	fn get_cost(&self) -> usize {
-		use Spell::*;
 		match self {
-			MagicMissile => 53,
-			Drain => 73,
-			Shield => 113,
-			Poison => 173,
-			Recharge => 229,
+			&MagicMissile => 53,
+			&Drain => 73,
+			&Shield => 113,
+			&Poison => 173,
+			&Recharge => 229,
 		}
 	}
 }
@@ -67,12 +69,12 @@ impl Player {
 			effects: vec![],
 			boss_hp: boss_hp,
 			boss_damage: boss_damage,
+			total_mana: 0,
+			armor: 0,
 		}
 	}
 
 	fn play(&mut self, s: &Spell) {
-		use Spell::*;
-		use Effect::*;
 		self.apply_effects();
 		if self.hp == 0  || self.boss_hp == 0 { // game already over
 			return;
@@ -102,13 +104,13 @@ impl Player {
 				self.hp += 2;
 			},
 			&Shield => {
-				self.effects.push((Shield, 6));
+				self.effects.push((Shielded, 6));
 			},
 			&Poison => {
-				self.effects.push((Poison, 6));
+				self.effects.push((Poisoned, 6));
 			},
 			&Recharge => {
-				self.effects.push((Recharge, 5));
+				self.effects.push((Recharging, 5));
 			},
 		}
 
@@ -118,7 +120,7 @@ impl Player {
 			1
 		} else {
 			self.boss_damage - self.armor
-		}
+		};
 		if damage > self.hp {
 			self.hp = 0;
 		} else {
@@ -127,26 +129,27 @@ impl Player {
 	}
 
 	fn apply_effects(&mut self) {
-		use Effect::*;
 		self.armor = 0;
+		for et in &self.effects {
+			match &et.0 {
+				&Shielded => {
+					self.armor += 7;
+				},
+				&Poisoned => {
+					if self.boss_hp >= 3 {
+						self.boss_hp -= 3;
+					} else {
+						self.boss_hp = 0;
+					}
+				},
+				&Recharging => {
+					self.mana += 101;
+				},
+			};
+		}
 		self.effects = self.effects.iter()
 			.map(|et| {
-				match et.0 {
-					&Shield => {
-						self.armor += 7;
-					},
-					&Poison => {
-						if self.boss_hp >= 3 {
-							self.boss_hp -= 3;
-						} else {
-							self.boss_hp = 0;
-						}
-					},
-					&Recharge => {
-						self.mana += 101;
-					},
-				};
-				(et.1, et.2 - 1)
+				(et.0.clone(), et.1 - 1)
 			})
 			.filter(|et| et.1 > 0)
 			.collect();
