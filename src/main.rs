@@ -1,4 +1,4 @@
-#![feature(step_by)]
+// #![feature(step_by)]
 #[macro_use] extern crate chomp;
 extern crate time;
 extern crate crypto;
@@ -49,5 +49,6 @@ fn main() {
     // run_day!(day17);
     // run_day!(day18);
     // run_day!(day19);
-    run_day!(day20);
+    // run_day!(day20);
+    run_day!(day21);
 }
