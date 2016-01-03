@@ -5,6 +5,7 @@ extern crate crypto;
 extern crate itertools;
 extern crate serde_json;
 extern crate permutohedron;
+extern crate rand;
 
 
 use std::io::prelude::*;
