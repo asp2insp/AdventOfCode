@@ -66,7 +66,7 @@ fn sorted_rep(p: usize, tup: &(Vec<usize>, Vec<usize>, Vec<usize>)) -> u64 {
 	hash
 }
 
-fn equal_parts_3(p: &[usize], prog: (Vec<usize>, Vec<usize>, Vec<usize>), memo: &mut HashSet<u64>)
+fn equal_parts_3(p: &[usize], prog: (&Vec<usize>, &Vec<usize>, &Vec<usize>), memo: &mut HashSet<u64>)
 						    -> Vec<(Vec<usize>, Vec<usize>, Vec<usize>)> {
 	if p.len() == 0 {
 		let sa = sum(&prog.0);
@@ -91,9 +91,9 @@ fn equal_parts_3(p: &[usize], prog: (Vec<usize>, Vec<usize>, Vec<usize>), memo: 
 
 	// Otherwise, we'll actually proceed with the computation
 	memo.insert(key);
-	let mut a = equal_parts_3(&p[1..], (push_clone(&prog.0, p[0]), prog.1.clone(), prog.2.clone()), memo);
-	let mut b = equal_parts_3(&p[1..], (prog.0.clone(), push_clone(&prog.1, p[0]), prog.2.clone()), memo);
-	let mut c = equal_parts_3(&p[1..], (prog.0, prog.1, push_clone(&prog.2, p[0])), memo);
+	let mut a = equal_parts_3(&p[1..], (&push_clone(&prog.0, p[0]), prog.1, prog.2), memo);
+	let mut b = equal_parts_3(&p[1..], (prog.0, &push_clone(&prog.1, p[0]), prog.2), memo);
+	let mut c = equal_parts_3(&p[1..], (prog.0, prog.1, &push_clone(&prog.2, p[0])), memo);
 	a.append(&mut b);
 	a.append(&mut c);
 	a
@@ -102,7 +102,7 @@ fn equal_parts_3(p: &[usize], prog: (Vec<usize>, Vec<usize>, Vec<usize>), memo: 
 pub fn part1(input: String) -> String {
 	let packages = parse_only(all_lines, input.as_bytes()).unwrap();
 	format!("{:?}", equal_parts_3(&packages[..],
-			(vec![], vec![], vec![]),
+			(&vec![], &vec![], &vec![]),
 			&mut HashSet::with_capacity(12000000)).len())
 }
 
