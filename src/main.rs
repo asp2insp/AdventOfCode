@@ -6,6 +6,7 @@ extern crate itertools;
 extern crate serde_json;
 extern crate permutohedron;
 extern crate rand;
+extern crate bloomfilter;
 
 
 use std::io::prelude::*;
@@ -53,5 +54,6 @@ fn main() {
     // run_day!(day20);
     // run_day!(day21);
     // run_day!(day22);
-    run_day!(day23);
+    // run_day!(day23);
+    run_day!(day24);
 }
