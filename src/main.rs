@@ -6,8 +6,6 @@ extern crate itertools;
 extern crate serde_json;
 extern crate permutohedron;
 extern crate rand;
-extern crate bloomfilter;
-
 
 use std::io::prelude::*;
 use std::fs::File;
