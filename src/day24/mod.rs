@@ -1,6 +1,5 @@
 use chomp::*;
 use chomp::ascii::{skip_whitespace,decimal};
-use std::collections::LinkedList;
 
 fn line(i: Input<u8>) -> U8Result<usize> {
 	parse!{i;
@@ -149,12 +148,8 @@ fn all_lines(i: Input<u8>) -> U8Result<Vec<usize>> {
 // 	v2.push(a);
 // 	v2
 // }
-
-#[inline]
-fn sum(v: &[usize]) -> usize {
-	v.iter().fold(0, |s, a| s + a)
-}
-
+//
+//
 // #[inline]
 // fn max(v: &Vec<usize>) -> usize {
 // 	v.iter().fold(0, |m, a| if *a > m {*a} else {m})
@@ -259,47 +254,90 @@ fn sum(v: &[usize]) -> usize {
 // 	ll
 // }
 
-fn min_set(p: &[usize], target: usize) -> Option<Vec<usize>> {
+#[inline]
+fn sum(v: &[usize]) -> usize {
+	v.iter().fold(0, |s, a| s + a)
+}
+
+fn combine_min(a: &Vec<Vec<usize>>, b: &Vec<Vec<usize>>) -> Vec<Vec<usize>> {
+	if a.len() == 0 {
+		b.clone()
+	} else if b.len() == 0 {
+		a.clone()
+	} else if a[0].len() == b[0].len() {
+		let mut v = a.clone();
+		v.append(&mut b.clone());
+		v
+	} else if a[0].len() < b[0].len() {
+		a.clone()
+	} else {
+		b.clone()
+	}
+}
+
+fn min_sets(p: &[usize], target: usize) -> Option<Vec<Vec<usize>>> {
 	// base case
 	if p.len() == 1 {
 		if p[0] == target {
-			Some(vec![p[0].clone()])
+			Some(vec![vec![p[0].clone()]])
 		} else {
 			None
 		}
 	} else if p[0] < target {
-		let use_it = match min_set(&p[1..], target - p[0]) {
-			Some(v) => {
-				v.push(p[0]);
-				Some(v)
+		let use_it = match min_sets(&p[1..], target - p[0]) {
+			Some(mut vs) => {
+				for v in &mut vs {
+					v.push(p[0]);
+				}
+				Some(vs)
 			},
 			None => None,
 		};
-		let lose_it = min_set(&p[1..], target);
-		match (use_it, lose_it) => {
-			(Some(v1), Some(v2)) => if v1.len() < v2.len() {Some(v1)} else {Some(v2)},
+		let lose_it = min_sets(&p[1..], target);
+		match (use_it, lose_it) {
+			(Some(v1), Some(v2)) => {
+				Some(combine_min(&v1, &v2))
+			},
 			(Some(v1), None) => Some(v1),
 			(None, Some(v2)) => Some(v2),
 			(None, None) => None,
 		}
 	} else {
-		min_set(&p[1..], target)
+		min_sets(&p[1..], target)
 	}
 }
 
 pub fn part1(input: String) -> String {
 	let mut packages = parse_only(all_lines, input.as_bytes()).unwrap();
-	let mut set: Bits32 = Bits32::new();
-	let target = sum(&packages);
-	println!("Target: {}", target);
 	packages.reverse();
-	format!("{:?}", min_set(&packages, target))
-	// let mut parts = equal_parts_n(&packages[2..], vec![vec![packages[0], packages[1]], vec![], vec![]], &mut set, target);
-	// parts.iter_mut().map(|&mut tup| )
-	// format!("{:?}", parts.len())
+	let target = sum(&packages) / 3;
+	println!("Target: {}", target);
+	let m_sets = min_sets(&packages, target).unwrap();
+	let min_tangle = m_sets.iter().fold(usize::max_value(), |m, a| {
+		let tangle = a.iter().fold(1, |p, a| p * a);
+		if tangle < m {
+			tangle
+		} else {
+			m
+		}
+	});
+	format!("{}", min_tangle)
 }
 
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+	let mut packages = parse_only(all_lines, input.as_bytes()).unwrap();
+	packages.reverse();
+	let target = sum(&packages) / 4;
+	println!("Target: {}", target);
+	let m_sets = min_sets(&packages, target).unwrap();
+	let min_tangle = m_sets.iter().fold(usize::max_value(), |m, a| {
+		let tangle = a.iter().fold(1, |p, a| p * a);
+		if tangle < m {
+			tangle
+		} else {
+			m
+		}
+	});
+	format!("{}", min_tangle)
 }
