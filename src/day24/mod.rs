@@ -259,15 +259,44 @@ fn sum(v: &[usize]) -> usize {
 // 	ll
 // }
 
+fn min_set(p: &[usize], target: usize) -> Option<Vec<usize>> {
+	// base case
+	if p.len() == 1 {
+		if p[0] == target {
+			Some(vec![p[0].clone()])
+		} else {
+			None
+		}
+	} else if p[0] < target {
+		let use_it = match min_set(&p[1..], target - p[0]) {
+			Some(v) => {
+				v.push(p[0]);
+				Some(v)
+			},
+			None => None,
+		};
+		let lose_it = min_set(&p[1..], target);
+		match (use_it, lose_it) => {
+			(Some(v1), Some(v2)) => if v1.len() < v2.len() {Some(v1)} else {Some(v2)},
+			(Some(v1), None) => Some(v1),
+			(None, Some(v2)) => Some(v2),
+			(None, None) => None,
+		}
+	} else {
+		min_set(&p[1..], target)
+	}
+}
+
 pub fn part1(input: String) -> String {
 	let mut packages = parse_only(all_lines, input.as_bytes()).unwrap();
 	let mut set: Bits32 = Bits32::new();
 	let target = sum(&packages);
 	println!("Target: {}", target);
 	packages.reverse();
-	let mut parts = equal_parts_n(&packages[2..], vec![vec![packages[0], packages[1]], vec![], vec![]], &mut set, target);
+	format!("{:?}", min_set(&packages, target))
+	// let mut parts = equal_parts_n(&packages[2..], vec![vec![packages[0], packages[1]], vec![], vec![]], &mut set, target);
 	// parts.iter_mut().map(|&mut tup| )
-	format!("{:?}", parts.len())
+	// format!("{:?}", parts.len())
 }
 
 
