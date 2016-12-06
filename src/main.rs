@@ -1,5 +1,6 @@
 // #![feature(step_by)]
-#[macro_use] extern crate chomp;
+#[macro_use]
+extern crate chomp;
 extern crate time;
 extern crate crypto;
 extern crate itertools;
@@ -55,5 +56,5 @@ fn main() {
     // run_day!(day22);
     // run_day!(day23);
     // run_day!(day24);
-    //run_day!(day25);
+    // run_day!(day25);
 }
