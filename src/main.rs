@@ -22,15 +22,16 @@ macro_rules! run_day {
     // this macro takes an argument of "type" `ident`
     // the `ident` designator is used for variable/function names
     ($mod_name:ident) => (
-        mod $mod_name;
         println!("Running {:?}...", stringify!($mod_name));
         println!("1> {:?}", $mod_name::part1(get_input(stringify!($mod_name))));
         println!("2> {:?}", $mod_name::part2(get_input(stringify!($mod_name))));
     )
 }
 
+mod day1;
+
 fn main() {
-    // run_day!(day1);
+    run_day!(day1);
     // run_day!(day2);
     // run_day!(day3);
     // run_day!(day4);
@@ -54,5 +55,5 @@ fn main() {
     // run_day!(day22);
     // run_day!(day23);
     // run_day!(day24);
-    run_day!(day25);
+    //run_day!(day25);
 }
