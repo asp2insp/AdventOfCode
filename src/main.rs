@@ -29,13 +29,14 @@ macro_rules! run_day {
     )
 }
 
-mod day1;
-mod day2;
+//mod day1;
+//mod day2;
+mod day3;
 
 fn main() {
     //run_day!(day1);
-    run_day!(day2);
-    // run_day!(day3);
+    //run_day!(day2);
+     run_day!(day3);
     // run_day!(day4);
     // run_day!(day5);
     // run_day!(day6);
