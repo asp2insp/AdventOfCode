@@ -32,32 +32,9 @@ macro_rules! run_day {
 //mod day1;
 //mod day2;
 //mod day3;
-mod day4;
+//mod day4;
+mod day5;
 
 fn main() {
-    //run_day!(day1);
-    //run_day!(day2);
-    // run_day!(day3);
-     run_day!(day4);
-    // run_day!(day5);
-    // run_day!(day6);
-    // run_day!(day7);
-    // run_day!(day8);
-    // run_day!(day9);
-    // run_day!(day10);
-    // run_day!(day11);
-    // run_day!(day12);
-    // run_day!(day13);
-    // run_day!(day14);
-    // run_day!(day15);
-    // run_day!(day16);
-    // run_day!(day17);
-    // run_day!(day18);
-    // run_day!(day19);
-    // run_day!(day20);
-    // run_day!(day21);
-    // run_day!(day22);
-    // run_day!(day23);
-    // run_day!(day24);
-    // run_day!(day25);
+    run_day!(day5);
 }
