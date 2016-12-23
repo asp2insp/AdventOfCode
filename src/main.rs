@@ -7,6 +7,7 @@ extern crate itertools;
 extern crate serde_json;
 extern crate permutohedron;
 extern crate rand;
+extern crate regex;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -29,8 +30,8 @@ macro_rules! run_day {
     )
 }
 
-mod day10;
+mod day11;
 
 fn main() {
-    run_day!(day10);
+    run_day!(day11);
 }
