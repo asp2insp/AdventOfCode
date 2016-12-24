@@ -8,6 +8,16 @@ use parking_lot::Mutex;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::fmt;
 
+// #[derive(Copy, Hash)]
+// enum Element {
+// 	Polonium,
+// 	Promethium,
+// 	Cobalt,
+// 	Ruthenium,
+// 	Thulium,
+// 	Dilithium,
+// 	Elerium,
+// }
 
 #[derive(Clone)]
 enum Object {
@@ -16,12 +26,12 @@ enum Object {
 }
 
 impl fmt::Debug for Object {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			&Generator(ref n) => write!(f, "G{}", n),
-			&Microchip(ref n) => write!(f, "M{}", n),
-		}
-	}
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+       match self {
+           &Generator(ref n) => write!(f, "G{}", n),
+           &Microchip(ref n) => write!(f, "M{}", n),
+       }
+   }
 }
 
 fn is_collection_valid(objects: &[Object]) -> bool {
@@ -55,18 +65,14 @@ fn is_collection_valid(objects: &[Object]) -> bool {
 	no_chips || no_rtgs || unpaired_chips.is_empty()
 }
 
-fn will_elevator_move(objects: &[Object]) -> bool {
-	objects.len() > 0 && objects.len() <= 2
-}
-
 fn find_objects(s: &str) -> Vec<Object> {
 	let gens = Regex::new(r"(\w+) generator").unwrap();
 	let chips = Regex::new(r"(\w+)-compatible microchip").unwrap();
 	let gen_iter = gens.captures_iter(s)
-		.map(|cap| cap.at(1).unwrap().to_owned())
+		.map(|cap| cap.at(1).unwrap()[..2].to_owned())
 		.map(|gen_name| Generator(gen_name));
 	let chip_iter = chips.captures_iter(s)
-		.map(|cap| cap.at(1).unwrap().to_owned())
+		.map(|cap| cap.at(1).unwrap()[..2].to_owned())
 		.map(|gen_name| Microchip(gen_name));
 	gen_iter.chain(chip_iter).collect()
 }
@@ -90,6 +96,14 @@ impl State {
 			key: "".to_string(),
 		};
 		s.calc_key()
+	}
+
+	fn distance(&self) -> usize {
+		let n_floors = self.floors.len();
+		self.floors.iter()
+			.enumerate()
+			.map(|(i, f)| (n_floors-i) * f.len())
+			.sum()
 	}
 
 	fn calc_key(mut self) -> State {
@@ -137,8 +151,8 @@ impl State {
 		// Are all floors but the last one empty? are we on the top floor?
 		self.current_floor == self.floors.len() - 1 &&
 		self.floors[0..(self.floors.len() - 1)].iter()
-			.flat_map(|f| f.iter())
-			.count() == 0
+			.map(|f| f.len())
+			.sum::<usize>() == 0
 	}
 
 	fn is_valid(&self) -> bool {
@@ -148,8 +162,7 @@ impl State {
 			.chain(self.elevator.iter().cloned())
 			.collect_vec();
 
-		is_collection_valid(&elevator_and_floor) &&
-		will_elevator_move(&self.elevator)
+		is_collection_valid(&elevator_and_floor)
 	}
 
 	fn next_states(mut self) -> Vec<State> {
@@ -164,34 +177,36 @@ impl State {
 			&self.elevator,
 			&self.floors[self.current_floor]
 		);
-		let mut ret = vec![];
+		let mut ret = Vec::with_capacity(exchanges.len());
 		for ex in exchanges {
 			let mut new_floors = self.floors.clone();
 			new_floors[self.current_floor] = ex.1.clone();
 			if self.current_floor > 0 {
-				ret.push(State {
+				let s = State {
 					current_floor: self.current_floor - 1,
 					elevator: ex.0.clone(),
 					floors: new_floors.clone(),
 					steps: self.steps + 1,
 					key: "".to_string(),
-				});
+				};
+				if s.is_valid() {
+					ret.push(s.calc_key());
+				}
 			}
 			if self.current_floor < self.floors.len() - 1 {
-				ret.push(State {
+				let s = State {
 					current_floor: self.current_floor + 1,
-					elevator: ex.0.clone(),
-					floors: new_floors.clone(),
+					elevator: ex.0,
+					floors: new_floors,
 					steps: self.steps + 1,
 					key: "".to_string(),
-				});
+				};
+				if s.is_valid() {
+					ret.push(s.calc_key());
+				}
 			}
 		}
-		ret.into_iter()
-			.filter(State::is_valid)
-			//.unique_by(|s| s.key.clone())
-			.map(State::calc_key)
-			.collect()
+		ret
 	}
 }
 
@@ -201,7 +216,7 @@ fn all_possible_exchanges(elevator: &Vec<Object>, floor: &Vec<Object>)
 		.cloned()
 		.chain(floor.iter().cloned())
 		.collect_vec();
-	let mut ret = Vec::<(Vec<Object>, Vec<Object>)>::new();
+	let mut ret = Vec::<(Vec<Object>, Vec<Object>)>::with_capacity(all_objs.len() * 3);
 
 	for i in 1..all_objs.len() {
 		let j = i - 1;
@@ -237,6 +252,7 @@ static GUARD: AtomicUsize = ATOMIC_USIZE_INIT;
 fn t_loop(q: &SegQueue<State>, seen: &Mutex<HashSet<String>>) {
 	let mut count = 0;
 	let id = ID.fetch_add(1, Ordering::Acquire);
+	let mut min_distance = usize::max_value();
 	loop {
 		if GUARD.load(Ordering::Relaxed) > 0 {
 			break
@@ -252,16 +268,25 @@ fn t_loop(q: &SegQueue<State>, seen: &Mutex<HashSet<String>>) {
 			}
 			set.insert(state.key.clone());
 		}
+		let d = state.distance();
+		if d < min_distance {
+			min_distance = d;
+		} else if d > min_distance + 5 {
+			continue
+		}
 		count += 1;
 		if count % 100_000 == 0 {
 			println!("{} - {}", id, count);
+			// println!("{}", state.key);
 		}
 		if state.is_winning() {
 			println!("FOUND: {}", state.steps);
 			GUARD.fetch_add(1, Ordering::Acquire);
 			break
 		}
-		for new_state in state.next_states() {
+		let mut next = state.next_states();
+		// next.sort_by(|a, b| a.distance().cmp(&b.distance()));
+		for new_state in next {
 			q.push(new_state);
 		}
 	}
@@ -285,7 +310,7 @@ pub fn part1(input: String) -> String {
 		.map(|l| find_objects(l))
 		.collect_vec();
 	let initial_state = State::new(floors);
-	// min_steps(initial_state);
+	min_steps(initial_state);
 	"Done".to_string()
 }
 
@@ -295,10 +320,10 @@ pub fn part2(input: String) -> String {
 		.map(|l| find_objects(l))
 		.collect_vec();
 	let mut initial_state = State::new(floors);
-	initial_state.floors[0].push(Generator("elerium".to_string()));
-	initial_state.floors[0].push(Generator("dilithium".to_string()));
-	initial_state.floors[0].push(Microchip("elerium".to_string()));
-	initial_state.floors[0].push(Microchip("dilithium".to_string()));
-	min_steps(initial_state.calc_key());
+	initial_state.floors[0].push(Generator("el".to_string()));
+	initial_state.floors[0].push(Generator("di".to_string()));
+	initial_state.floors[0].push(Microchip("el".to_string()));
+	initial_state.floors[0].push(Microchip("di".to_string()));
+	// min_steps(initial_state.calc_key());
 	"Done".to_string()
 }
