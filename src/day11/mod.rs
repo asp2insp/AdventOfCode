@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, BinaryHeap};
 use itertools::Itertools;
 use regex::Regex;
 use self::Object::*;
@@ -6,8 +6,7 @@ use crossbeam::sync::SegQueue;
 use crossbeam::scope;
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
-use std::fmt;
-
+use std::{fmt, cmp};
 // #[derive(Copy, Hash)]
 // enum Element {
 // 	Polonium,
@@ -19,7 +18,7 @@ use std::fmt;
 // 	Elerium,
 // }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 enum Object {
 	Generator(String),
 	Microchip(String),
@@ -77,7 +76,7 @@ fn find_objects(s: &str) -> Vec<Object> {
 	gen_iter.chain(chip_iter).collect()
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 struct State {
 	current_floor: usize,
 	floors: Vec<Vec<Object>>,
@@ -85,6 +84,21 @@ struct State {
 	steps: usize,
 	key: String,
 }
+
+impl Ord for State {
+    fn cmp(&self, other: &State) -> cmp::Ordering {
+		let my_score = self.distance() + self.steps;
+		let other_score = other.distance() + other.steps;
+        other_score.cmp(&my_score)
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &State) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 impl State {
 	fn new(floors: Vec<Vec<Object>>) -> State {
@@ -249,30 +263,25 @@ fn all_possible_exchanges(elevator: &Vec<Object>, floor: &Vec<Object>)
 static ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static GUARD: AtomicUsize = ATOMIC_USIZE_INIT;
 
-fn t_loop(q: &SegQueue<State>, seen: &Mutex<HashSet<String>>) {
+fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<String>>) {
 	let mut count = 0;
 	let id = ID.fetch_add(1, Ordering::Acquire);
-	let mut min_distance = usize::max_value();
 	loop {
 		if GUARD.load(Ordering::Relaxed) > 0 {
 			break
 		}
-		let state = match q.try_pop() {
+		let mut q_guard = q.lock();
+		let state = match q_guard.pop() {
 			Some(s) => s,
 			None => continue,
 		};
+		drop(q_guard);
 		{
 			let mut set = seen.lock();
 			if set.contains(&state.key) {
 				continue;
 			}
 			set.insert(state.key.clone());
-		}
-		let d = state.distance();
-		if d < min_distance {
-			min_distance = d;
-		} else if d > min_distance + 5 {
-			continue
 		}
 		count += 1;
 		if count % 100_000 == 0 {
@@ -285,16 +294,16 @@ fn t_loop(q: &SegQueue<State>, seen: &Mutex<HashSet<String>>) {
 			break
 		}
 		let mut next = state.next_states();
-		// next.sort_by(|a, b| a.distance().cmp(&b.distance()));
+		let mut q_guard = q.lock();
 		for new_state in next {
-			q.push(new_state);
+			q_guard.push(new_state);
 		}
 	}
 }
 
 fn min_steps(initial: State) {
-	let q = SegQueue::new();
-	q.push(initial);
+	let q = Mutex::new(BinaryHeap::new());
+	q.lock().push(initial);
 	let seen = Mutex::new(HashSet::new());
 
 	scope(|scope| {
@@ -324,6 +333,6 @@ pub fn part2(input: String) -> String {
 	initial_state.floors[0].push(Generator("di".to_string()));
 	initial_state.floors[0].push(Microchip("el".to_string()));
 	initial_state.floors[0].push(Microchip("di".to_string()));
-	// min_steps(initial_state.calc_key());
+	min_steps(initial_state.calc_key());
 	"Done".to_string()
 }
