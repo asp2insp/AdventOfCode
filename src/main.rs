@@ -8,6 +8,8 @@ extern crate serde_json;
 extern crate permutohedron;
 extern crate rand;
 extern crate regex;
+extern crate crossbeam;
+extern crate parking_lot;
 
 use std::io::prelude::*;
 use std::fs::File;
