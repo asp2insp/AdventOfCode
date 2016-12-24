@@ -2,11 +2,12 @@ use std::collections::{HashSet, BinaryHeap};
 use itertools::Itertools;
 use regex::Regex;
 use self::Object::*;
-use crossbeam::sync::SegQueue;
 use crossbeam::scope;
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
-use std::{fmt, cmp};
+use std::cmp;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 // #[derive(Copy, Hash)]
 // enum Element {
 // 	Polonium,
@@ -18,19 +19,10 @@ use std::{fmt, cmp};
 // 	Elerium,
 // }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum Object {
 	Generator(String),
 	Microchip(String),
-}
-
-impl fmt::Debug for Object {
-   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-       match self {
-           &Generator(ref n) => write!(f, "G{}", n),
-           &Microchip(ref n) => write!(f, "M{}", n),
-       }
-   }
 }
 
 fn is_collection_valid(objects: &[Object]) -> bool {
@@ -76,53 +68,29 @@ fn find_objects(s: &str) -> Vec<Object> {
 	gen_iter.chain(chip_iter).collect()
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, Clone)]
 struct State {
 	current_floor: usize,
 	floors: Vec<Vec<Object>>,
 	elevator: Vec<Object>,
 	steps: usize,
-	key: String,
 }
 
-impl Ord for State {
-    fn cmp(&self, other: &State) -> cmp::Ordering {
-		let my_score = self.distance() + self.steps;
-		let other_score = other.distance() + other.steps;
-        other_score.cmp(&my_score)
-    }
-}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &State) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-
-impl State {
-	fn new(floors: Vec<Vec<Object>>) -> State {
-		let s = State {
-			current_floor: 0,
-			floors: floors,
-			elevator: Vec::new(),
-			steps: 0,
-			key: "".to_string(),
-		};
-		s.calc_key()
+impl PartialEq for State {
+	fn eq(&self, other: &State) -> bool {
+		let mut self_hasher = DefaultHasher::new();
+		self.hash(&mut self_hasher);
+		let mut other_hasher = DefaultHasher::new();
+		other.hash(&mut other_hasher);
+		self_hasher.finish() == other_hasher.finish()
 	}
+}
 
-	fn distance(&self) -> usize {
-		let n_floors = self.floors.len();
-		self.floors.iter()
-			.enumerate()
-			.map(|(i, f)| (n_floors-i) * f.len())
-			.sum()
-	}
-
-	fn calc_key(mut self) -> State {
-		let floors = self.floors.iter()
-			.map(|objects| {
+impl Hash for State {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.current_floor.hash(state);
+		let _ = self.floors.iter()
+			.all(|objects| {
 				let mut unpaired_chips = HashSet::new();
 				let mut unpaired_rtgs = HashSet::new();
 				let mut paired_count = 0;
@@ -150,15 +118,48 @@ impl State {
 				unpaired_chips.sort();
 				let mut unpaired_rtgs = unpaired_rtgs.into_iter().collect_vec();
 				unpaired_rtgs.sort();
-				format!("{}{:?}{:?}", paired_count, unpaired_chips, unpaired_rtgs)
-			})
-			.collect_vec();
-		let mut elevator = self.elevator.iter()
-			.map(|o| format!("{:?}", o))
-			.collect_vec();
+				paired_count.hash(state);
+				unpaired_chips.hash(state);
+				unpaired_rtgs.hash(state);
+				true
+			});
+		let mut elevator = self.elevator.clone();
 		elevator.sort();
-		self.key = format!("{}{:?}{:?}", self.current_floor, floors, elevator);
-		self
+		elevator.hash(state);
+	}
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &State) -> cmp::Ordering {
+		let my_score = self.distance() + self.steps;
+		let other_score = other.distance() + other.steps;
+        other_score.cmp(&my_score)
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &State) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+
+impl State {
+	fn new(floors: Vec<Vec<Object>>) -> State {
+		State {
+			current_floor: 0,
+			floors: floors,
+			elevator: Vec::new(),
+			steps: 0,
+		}
+	}
+
+	fn distance(&self) -> usize {
+		let n_floors = self.floors.len();
+		self.floors.iter()
+			.enumerate()
+			.map(|(i, f)| (n_floors-i) * f.len())
+			.sum()
 	}
 
 	fn is_winning(&self) -> bool {
@@ -201,10 +202,9 @@ impl State {
 					elevator: ex.0.clone(),
 					floors: new_floors.clone(),
 					steps: self.steps + 1,
-					key: "".to_string(),
 				};
 				if s.is_valid() {
-					ret.push(s.calc_key());
+					ret.push(s);
 				}
 			}
 			if self.current_floor < self.floors.len() - 1 {
@@ -213,10 +213,9 @@ impl State {
 					elevator: ex.0,
 					floors: new_floors,
 					steps: self.steps + 1,
-					key: "".to_string(),
 				};
 				if s.is_valid() {
-					ret.push(s.calc_key());
+					ret.push(s);
 				}
 			}
 		}
@@ -263,7 +262,7 @@ fn all_possible_exchanges(elevator: &Vec<Object>, floor: &Vec<Object>)
 static ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static GUARD: AtomicUsize = ATOMIC_USIZE_INIT;
 
-fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<String>>) {
+fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<State>>) {
 	let mut count = 0;
 	let id = ID.fetch_add(1, Ordering::Acquire);
 	loop {
@@ -278,22 +277,27 @@ fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<String>>) {
 		drop(q_guard);
 		{
 			let mut set = seen.lock();
-			if set.contains(&state.key) {
+			if set.contains(&state) {
 				continue;
 			}
-			set.insert(state.key.clone());
+			set.insert(state.clone());
 		}
 		count += 1;
 		if count % 100_000 == 0 {
 			println!("{} - {}", id, count);
-			// println!("{}", state.key);
 		}
 		if state.is_winning() {
 			println!("FOUND: {}", state.steps);
 			GUARD.fetch_add(1, Ordering::Acquire);
 			break
 		}
-		let mut next = state.next_states();
+		let next = {
+			let set = seen.lock();
+			state.next_states().into_iter()
+				.filter(|next| !set.contains(next))
+				.collect_vec()
+		};
+
 		let mut q_guard = q.lock();
 		for new_state in next {
 			q_guard.push(new_state);
@@ -333,6 +337,6 @@ pub fn part2(input: String) -> String {
 	initial_state.floors[0].push(Generator("di".to_string()));
 	initial_state.floors[0].push(Microchip("el".to_string()));
 	initial_state.floors[0].push(Microchip("di".to_string()));
-	min_steps(initial_state.calc_key());
+	min_steps(initial_state);
 	"Done".to_string()
 }

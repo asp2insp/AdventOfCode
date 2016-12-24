@@ -14,3 +14,10 @@ rand = "*"
 regex = "0.1"
 crossbeam = "0.2"
 parking_lot = "0.3"
+
+
+[features]
+debug = []
+
+[profile.release]
+debug = true
