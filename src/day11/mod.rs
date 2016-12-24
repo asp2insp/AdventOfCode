@@ -1,131 +1,90 @@
 use std::collections::{HashSet, BinaryHeap};
 use itertools::Itertools;
 use regex::Regex;
-use self::Object::*;
+use self::Element::*;
 use crossbeam::scope;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::cmp;
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
-// #[derive(Copy, Hash)]
-// enum Element {
-// 	Polonium,
-// 	Promethium,
-// 	Cobalt,
-// 	Ruthenium,
-// 	Thulium,
-// 	Dilithium,
-// 	Elerium,
-// }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-enum Object {
-	Generator(String),
-	Microchip(String),
+#[derive(Copy, Clone, Hash)]
+#[repr(u8)]
+enum Element {
+	Polonium,
+	Promethium,
+	Cobalt,
+	Ruthenium,
+	Thulium,
+	Dilithium,
+	Elerium,
 }
 
-fn is_collection_valid(objects: &[Object]) -> bool {
-	let mut no_chips = true;
-	let mut no_rtgs = true;
-	let mut unpaired_chips = HashSet::new();
-	let mut unpaired_rtgs = HashSet::new();
-
-	for o in objects {
-		match o {
-			&Generator(ref name) => {
-				no_rtgs = false;
-				if unpaired_chips.contains(name) {
-					unpaired_chips.remove(name);
-					// and we're good
-				} else {
-					unpaired_rtgs.insert(name.clone());
-				}
-			},
-			&Microchip(ref name) => {
-				no_chips = false;
-				if unpaired_rtgs.contains(name) {
-					unpaired_rtgs.remove(name);
-					// and we're good
-				} else {
-					unpaired_chips.insert(name.clone());
-				}
-			},
+impl <'a> From<&'a str> for Element {
+	fn from(s: &'a str) -> Element {
+		match s {
+			"polonium" => Polonium,
+			"promethium" => Promethium,
+			"cobalt" => Cobalt,
+			"ruthenium" => Ruthenium,
+			"thulium" => Thulium,
+			"dilithium" => Dilithium,
+			"elerium" => Elerium,
+			_ => unimplemented!(),
 		}
 	}
-	no_chips || no_rtgs || unpaired_chips.is_empty()
 }
 
-fn find_objects(s: &str) -> Vec<Object> {
+const MASK_BOTTOM: u64 = 0xFFFF_FFFF;
+
+fn is_collection_valid(objects: u64) -> bool {
+	let chips = objects & MASK_BOTTOM;
+	let rtgs = objects >> 32;
+	rtgs == 0 || chips == 0 || (rtgs ^ chips) & chips == 0
+}
+
+fn find_objects(s: &str) -> u64 {
 	let gens = Regex::new(r"(\w+) generator").unwrap();
 	let chips = Regex::new(r"(\w+)-compatible microchip").unwrap();
-	let gen_iter = gens.captures_iter(s)
-		.map(|cap| cap.at(1).unwrap()[..2].to_owned())
-		.map(|gen_name| Generator(gen_name));
-	let chip_iter = chips.captures_iter(s)
-		.map(|cap| cap.at(1).unwrap()[..2].to_owned())
-		.map(|gen_name| Microchip(gen_name));
-	gen_iter.chain(chip_iter).collect()
+	let gens = gens.captures_iter(s)
+		.map(|cap| {
+			let e: Element = cap.at(1).unwrap().into();
+			e
+		})
+		.fold(0, |g, element| g| 1 << element as usize);
+	let chips = chips.captures_iter(s)
+		.map(|cap| {
+			let e: Element = cap.at(1).unwrap().into();
+			e
+		})
+		.fold(0, |c, element| c | 1 << element as usize);
+
+	gens << 32 | chips
 }
+
+const NUM_FLOORS: usize = 4;
 
 #[derive(Eq, Clone)]
 struct State {
 	current_floor: usize,
-	floors: Vec<Vec<Object>>,
-	elevator: Vec<Object>,
+	floors: [u64; NUM_FLOORS],
+	elevator: u64,
 	steps: usize,
 }
 
 impl PartialEq for State {
 	fn eq(&self, other: &State) -> bool {
-		let mut self_hasher = DefaultHasher::new();
-		self.hash(&mut self_hasher);
-		let mut other_hasher = DefaultHasher::new();
-		other.hash(&mut other_hasher);
-		self_hasher.finish() == other_hasher.finish()
+		self.current_floor.eq(&other.current_floor) &&
+		self.elevator.eq(&other.elevator) &&
+		self.floors.eq(&other.floors)
 	}
 }
 
 impl Hash for State {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.current_floor.hash(state);
-		let _ = self.floors.iter()
-			.all(|objects| {
-				let mut unpaired_chips = HashSet::new();
-				let mut unpaired_rtgs = HashSet::new();
-				let mut paired_count = 0;
-				for o in objects {
-					match o {
-						&Generator(ref name) => {
-							if unpaired_chips.contains(name) {
-								unpaired_chips.remove(name);
-								paired_count += 1;
-							} else {
-								unpaired_rtgs.insert(name.clone());
-							}
-						},
-						&Microchip(ref name) => {
-							if unpaired_rtgs.contains(name) {
-								unpaired_rtgs.remove(name);
-								paired_count += 1;
-							} else {
-								unpaired_chips.insert(name.clone());
-							}
-						},
-					}
-				}
-				let mut unpaired_chips = unpaired_chips.into_iter().collect_vec();
-				unpaired_chips.sort();
-				let mut unpaired_rtgs = unpaired_rtgs.into_iter().collect_vec();
-				unpaired_rtgs.sort();
-				paired_count.hash(state);
-				unpaired_chips.hash(state);
-				unpaired_rtgs.hash(state);
-				true
-			});
-		let mut elevator = self.elevator.clone();
-		elevator.sort();
-		elevator.hash(state);
+		self.floors.hash(state);
+		self.elevator.hash(state);
 	}
 }
 
@@ -145,58 +104,50 @@ impl PartialOrd for State {
 
 
 impl State {
-	fn new(floors: Vec<Vec<Object>>) -> State {
+	fn new(floors: Vec<u64>) -> State {
+		let mut v = [0; NUM_FLOORS];
+		v.copy_from_slice(&floors);
 		State {
 			current_floor: 0,
-			floors: floors,
-			elevator: Vec::new(),
+			floors: v,
+			elevator: 0,
 			steps: 0,
 		}
 	}
 
 	fn distance(&self) -> usize {
-		let n_floors = self.floors.len();
 		self.floors.iter()
 			.enumerate()
-			.map(|(i, f)| (n_floors-i) * f.len())
+			.map(|(i, f)| (NUM_FLOORS-i) * f.count_ones() as usize)
 			.sum()
 	}
 
 	fn is_winning(&self) -> bool {
 		// Are all floors but the last one empty? are we on the top floor?
 		self.current_floor == self.floors.len() - 1 &&
-		self.floors[0..(self.floors.len() - 1)].iter()
-			.map(|f| f.len())
-			.sum::<usize>() == 0
+		self.floors[0..(self.floors.len() - 1)]
+			.iter()
+			.sum::<u64>() == 0
 	}
 
 	fn is_valid(&self) -> bool {
-		let elevator_and_floor = self.floors[self.current_floor]
-			.iter()
-			.cloned()
-			.chain(self.elevator.iter().cloned())
-			.collect_vec();
-
-		is_collection_valid(&elevator_and_floor)
+		let elevator_and_floor = self.elevator | self.floors[self.current_floor];
+		is_collection_valid(elevator_and_floor)
 	}
 
-	fn next_states(mut self) -> Vec<State> {
-		if self.floors.len() > 1 &&
-		   self.floors[0].len() == 0 &&
-		   self.current_floor > 1 {
-			// Clear lower floors as we empty them
-			self.floors.remove(0);
-			self.current_floor -= 1;
-		}
+	fn next_states(self) -> Vec<State> {
+		let floor_below_empty =
+			self.current_floor > 1 &&
+			self.floors[self.current_floor - 1] == 0;
 		let exchanges = all_possible_exchanges(
-			&self.elevator,
-			&self.floors[self.current_floor]
+			self.elevator,
+			self.floors[self.current_floor]
 		);
 		let mut ret = Vec::with_capacity(exchanges.len());
 		for ex in exchanges {
 			let mut new_floors = self.floors.clone();
 			new_floors[self.current_floor] = ex.1.clone();
-			if self.current_floor > 0 {
+			if self.current_floor > 0 && ! floor_below_empty {
 				let s = State {
 					current_floor: self.current_floor - 1,
 					elevator: ex.0.clone(),
@@ -223,38 +174,24 @@ impl State {
 	}
 }
 
-fn all_possible_exchanges(elevator: &Vec<Object>, floor: &Vec<Object>)
-	-> Vec<(Vec<Object>, Vec<Object>)> {
-	let all_objs = elevator.iter()
-		.cloned()
-		.chain(floor.iter().cloned())
-		.collect_vec();
-	let mut ret = Vec::<(Vec<Object>, Vec<Object>)>::with_capacity(all_objs.len() * 3);
+fn all_possible_exchanges(elevator: u64, floor: u64) -> Vec<(u64, u64)> {
+	let all_objs = elevator | floor;
 
-	for i in 1..all_objs.len() {
-		let j = i - 1;
-		let mut rest = all_objs.clone();
-		let oi = rest.remove(i);
-		let oj = rest.remove(j);
-		// Take both on elevator
-		ret.push((
-			vec![oi.clone(), oj.clone()],
-			rest.clone(),
-		));
-		// Take one on elevator
-		rest.push(oi);
-		ret.push((
-			vec![oj],
-			rest,
-		));
-	}
-	if !all_objs.is_empty() {
-		let mut rest = all_objs;
-		let last = rest.pop().unwrap();
-		ret.push((
-			vec![last],
-			rest,
-		));
+	let mut ret = Vec::<(u64, u64)>::new();
+
+	for i in 1..64 {
+		let j = i-1;
+		let oi = 1 << i;
+		let oj = 1 << j;
+		if oj & all_objs != 0 {
+			// take j on elevator
+			ret.push((oj, all_objs - oj));
+
+			if oi & all_objs != 0 {
+				// take both on elevator
+				ret.push((oi + oj, all_objs - oi - oj));
+			}
+		}
 	}
 	ret
 }
@@ -262,28 +199,33 @@ fn all_possible_exchanges(elevator: &Vec<Object>, floor: &Vec<Object>)
 static ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static GUARD: AtomicUsize = ATOMIC_USIZE_INIT;
 
-fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<State>>) {
+fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &RwLock<HashSet<State>>) {
 	let mut count = 0;
 	let id = ID.fetch_add(1, Ordering::Acquire);
+	let mut cached: Option<State> = None;
 	loop {
 		if GUARD.load(Ordering::Relaxed) > 0 {
 			break
 		}
-		let mut q_guard = q.lock();
-		let state = match q_guard.pop() {
+		let state = match cached.take() {
 			Some(s) => s,
-			None => continue,
-		};
-		drop(q_guard);
-		{
-			let mut set = seen.lock();
-			if set.contains(&state) {
-				continue;
+			None => {
+				let mut q_guard = q.lock();
+				match q_guard.pop() {
+					Some(s) => s,
+					None => continue,
+				}
 			}
-			set.insert(state.clone());
+		};
+		let mut set = seen.write();
+		if set.contains(&state) {
+			continue;
 		}
+		set.insert(state.clone());
+		drop(set);
+
 		count += 1;
-		if count % 100_000 == 0 {
+		if count % 500_000 == 0 {
 			println!("{} - {}", id, count);
 		}
 		if state.is_winning() {
@@ -291,27 +233,30 @@ fn t_loop(q: &Mutex<BinaryHeap<State>>, seen: &Mutex<HashSet<State>>) {
 			GUARD.fetch_add(1, Ordering::Acquire);
 			break
 		}
-		let next = {
-			let set = seen.lock();
-			state.next_states().into_iter()
-				.filter(|next| !set.contains(next))
-				.collect_vec()
-		};
+
+		let next = state.next_states();
+		let set = seen.read();
+		let next = next.into_iter()
+			.filter(|next| !set.contains(next))
+			.collect_vec();
+		drop(set);
+
+		let mut next_heap = BinaryHeap::with_capacity(next.len());
+		next_heap.extend(next);
 
 		let mut q_guard = q.lock();
-		for new_state in next {
-			q_guard.push(new_state);
-		}
+		q_guard.append(&mut next_heap);
+		cached = q_guard.pop();
 	}
 }
 
 fn min_steps(initial: State) {
 	let q = Mutex::new(BinaryHeap::new());
 	q.lock().push(initial);
-	let seen = Mutex::new(HashSet::new());
+	let seen = RwLock::new(HashSet::new());
 
 	scope(|scope| {
-		for _ in 0..4 {
+		for _ in 0..3 {
 			scope.spawn(|| t_loop(&q, &seen));
 		}
 	});
@@ -329,14 +274,14 @@ pub fn part1(input: String) -> String {
 
 pub fn part2(input: String) -> String {
 	GUARD.store(0, Ordering::SeqCst);
-	let floors = input.lines()
+	let mut floors = input.lines()
 		.map(|l| find_objects(l))
 		.collect_vec();
-	let mut initial_state = State::new(floors);
-	initial_state.floors[0].push(Generator("el".to_string()));
-	initial_state.floors[0].push(Generator("di".to_string()));
-	initial_state.floors[0].push(Microchip("el".to_string()));
-	initial_state.floors[0].push(Microchip("di".to_string()));
+	let extras = "An elerium generator An elerium-compatible microchip. A dilithium generator A dilithium-compatible microchip";
+	let extra_objects = find_objects(extras);
+	floors[0] = floors[0] | extra_objects;
+
+	let initial_state = State::new(floors);
 	min_steps(initial_state);
 	"Done".to_string()
 }
