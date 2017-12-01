@@ -7,6 +7,7 @@ const DIGITS: &'static str = "93842744946836323593516414113745734662731646873375
 fn main() {
     let sum = DIGITS
         .chars()
+        .chain(iter::once(DIGITS.chars().last().unwrap()))
         .tuple_windows::<(_, _)>()
         .filter(|&(a, b)| a == b)
         .map(|(a, _)| a.to_digit(10).unwrap())
