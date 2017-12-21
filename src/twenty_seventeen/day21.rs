@@ -133,18 +133,17 @@ impl Square {
 
 fn split_into_n(sq: &Square, n: usize) -> Vec<Vec<Square>> {
     let block_size = sq.size()/n;
-    let mut rows = vec![];
+    let mut rows = Vec::with_capacity(n);
     for i in 0..n {
-        let mut col = vec![];
+        let mut col = Vec::with_capacity(n);
         for j in 0..n {
-            let mut s = String::new();
+            let mut s = Square { data: Vec::with_capacity(block_size) };
             for x in 0..block_size {
                 let r_i = i*block_size + x;
                 let c_i = j*block_size;
-                s += str::from_utf8(&sq.data[r_i][c_i..c_i+block_size]).unwrap();
-                s += "/";
+                s.data.push(sq.data[r_i][c_i..c_i+block_size].to_owned());
             }
-            col.push(Square::from(s.as_str()));
+            col.push(s);
         }
         rows.push(col);
     }
