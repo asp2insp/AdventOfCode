@@ -29,7 +29,7 @@ use std::io::prelude::*;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::time::Duration;
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, Hash)]
 struct Square {
     data: Vec<Vec<u8>>,
 }
@@ -123,7 +123,7 @@ impl Square {
         v.push(self.clone());
         v.append(&mut self.flip_x().get_ts_rot());
         v.append(&mut self.flip_y().get_ts_rot());
-        v
+        v.into_iter().unique().collect()
     }
 
     fn get_ts_rot(&self) -> Vec<Square> {
