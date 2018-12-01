@@ -1,22 +1,5 @@
-#![allow(unused)]
-#[macro_use]
-extern crate chomp;
-extern crate time;
-extern crate crypto;
-extern crate itertools;
-extern crate serde_json;
-extern crate permutohedron;
-extern crate rand;
-extern crate regex;
-extern crate crossbeam;
-extern crate parking_lot;
-
-use std::io::prelude::*;
-use std::fs::File;
-use std::env;
-
 fn get_input(mod_name: &str) -> String {
-    let path = format!("input/{}", mod_name);
+    let path = format!("src/{}/input.txt", mod_name);
     let mut f = File::open(path).unwrap();
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
