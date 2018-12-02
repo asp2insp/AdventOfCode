@@ -60,8 +60,8 @@ macro_rules! run_day {
     )
 }
 
-mod day1;
+mod day2;
 
 fn main() {
-    run_day!(day1);
+    run_day!(day2);
 }
