@@ -9,6 +9,7 @@ extern crate permutohedron;
 extern crate rand;
 extern crate regex;
 extern crate crossbeam;
+extern crate chrono;
 extern crate parking_lot;
 
 use std::io::prelude::*;
@@ -60,8 +61,8 @@ macro_rules! run_day {
     )
 }
 
-mod day3;
+mod day4;
 
 fn main() {
-    run_day!(day3);
+    run_day!(day4);
 }
