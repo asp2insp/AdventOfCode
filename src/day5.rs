@@ -1,0 +1,61 @@
+use itertools::*;
+use chrono::{NaiveDateTime,Timelike};
+use std::collections::HashMap;
+use time::Duration;
+use rayon::prelude::*;
+use regex::*;
+use std::mem;
+
+lazy_static! {
+    static ref RE: Regex = Regex::new(r"(?P<year>\d{4})").unwrap();
+}
+
+fn is_safe(a: char, b: char) -> bool {
+    a == b || a.to_ascii_lowercase() != b.to_ascii_lowercase()
+}
+
+fn len_after_reacting(mut chain: Vec<char>) -> usize {
+    let mut scratch = Vec::with_capacity(chain.len());
+    loop {
+        let mut i = 0;
+        while i < chain.len()-1 {
+            if is_safe(chain[i], chain[i+1]) {
+                scratch.push(chain[i]);
+                i += 1;
+            } else {
+                i += 2;
+            }
+        }
+        // Fixup the end
+        if is_safe(chain[chain.len()-1], chain[chain.len()-2]) {
+            scratch.push(chain[chain.len()-1]);
+        } else {
+            scratch.pop();
+        }
+        if scratch.len() == chain.len() {
+            break
+        }
+        mem::swap(&mut scratch, &mut chain);
+        scratch.clear();
+    }
+    chain.len()
+}
+
+pub fn part1(input: String) -> String {
+    let chain = input.chars().collect::<Vec<_>>();
+    let len = len_after_reacting(chain);
+    format!("{}", len)
+}
+
+pub fn part2(input: String) -> String {
+    let mut chain = input.chars().collect::<Vec<_>>();
+    let abc = (65u8..90).map(|ci| ci as char).collect::<Vec<char>>();
+    let m = abc.into_par_iter()
+        .map(|c| {
+            let chain2 = chain.iter().filter(|i| **i != c && **i != c.to_ascii_lowercase()).cloned().collect();
+            len_after_reacting(chain2)
+        })
+        .min()
+        .unwrap();
+    format!("{}", m)
+}

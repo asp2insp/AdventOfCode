@@ -8,9 +8,12 @@ extern crate serde_json;
 extern crate permutohedron;
 extern crate rand;
 extern crate regex;
-extern crate crossbeam;
 extern crate chrono;
 extern crate parking_lot;
+extern crate rayon;
+
+#[macro_use]
+extern crate lazy_static;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -61,8 +64,8 @@ macro_rules! run_day {
     )
 }
 
-mod day4;
+mod day5;
 
 fn main() {
-    run_day!(day4);
+    run_day!(day5);
 }
