@@ -6,10 +6,10 @@ use rayon::prelude::*;
 use regex::*;
 use std::mem;
 
-const P: usize = 9;
-const M: usize = 25;
-// const P: usize = 423;
-// const M: usize = 71944;
+// const P: usize = 10;
+// const M: usize = 1618;
+const P: usize = 423;
+const M: usize = 71944;
 
 #[derive(Debug)]
 struct Circle {
@@ -66,17 +66,31 @@ pub fn part1(input: String) -> String {
         let player = (m-1) % P;
         if m % 23 == 0 {
             scores[player] += m;
-            scores[player] += marbles.left().left().left().left().left().left().left().left().remove();
+            scores[player] += marbles.left().left().left().left().left().left().left().remove();
+            marbles.right();
         } else {
             marbles.right().insert(m);
         }
-        println!("[{}] {:?}", player + 1, marbles);
+        // println!("[{}] {:?}", player + 1, marbles);
     }
     format!("{}", scores.into_iter().max().unwrap())
 }
 
 
 pub fn part2(input: String) -> String {
-  
-    format!("{}", "non")
+    let mut marbles = Circle::new();
+    marbles.insert(0);
+    let mut scores = [0usize; P];
+    for m in 1..=(M*100) {
+        let player = (m-1) % P;
+        if m % 23 == 0 {
+            scores[player] += m;
+            scores[player] += marbles.left().left().left().left().left().left().left().remove();
+            marbles.right();
+        } else {
+            marbles.right().insert(m);
+        }
+        // println!("[{}] {:?}", player + 1, marbles);
+    }
+    format!("{}", scores.into_iter().max().unwrap())
 }
