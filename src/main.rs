@@ -11,6 +11,7 @@ extern crate regex;
 extern crate chrono;
 extern crate parking_lot;
 extern crate rayon;
+extern crate image;
 
 #[macro_use]
 extern crate lazy_static;
@@ -64,8 +65,8 @@ macro_rules! run_day {
     )
 }
 
-mod day8;
+mod day10;
 
 fn main() {
-    run_day!(day8);
+    run_day!(day10);
 }
