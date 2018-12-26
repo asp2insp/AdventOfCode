@@ -62,6 +62,9 @@ macro_rules! run_day {
         if run_two {
             println!("2> {:?}", $mod_name::part2(get_input(stringify!($mod_name))));
         }
+        if !run_one && !run_two {
+            println!("Specify part 1 or part 2");
+        }
     )
 }
 
