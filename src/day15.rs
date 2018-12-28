@@ -321,16 +321,6 @@ pub fn part2(input: String) -> String {
     unreachable!()
 }
 
-const EXAMPLE: &str = r#"
-#######
-#E.G#.#
-#.#G..#
-#G.#.G#
-#G..#.#
-#...E.#
-#######
-"#;
-
 #[cfg(test)]
 mod test {
     use super::*;
