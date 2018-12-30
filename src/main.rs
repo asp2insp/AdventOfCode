@@ -28,6 +28,18 @@ fn get_input(mod_name: &str) -> String {
     s.trim().to_string()
 }
 
+macro_rules! veci{
+    ( $( $e:expr, if $b:expr),*$(,)* ) => ({
+        vec![
+            $(
+                if $b {Some($e)} else {None}
+            ),*
+        ].into_iter()
+        .flat_map(|a| a)
+        .collect()
+    })
+}
+
 macro_rules! run_day {
     // this macro takes an argument of "type" `ident`
     // the `ident` designator is used for variable/function names
@@ -68,8 +80,8 @@ macro_rules! run_day {
     )
 }
 
-mod day17;
+mod day18;
 
 fn main() {
-    run_day!(day17);
+    run_day!(day18);
 }

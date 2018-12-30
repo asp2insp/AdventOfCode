@@ -8,18 +8,6 @@ use std::mem;
 use image::{Rgb, ImageBuffer};
 use std::path::Path;
 
-macro_rules! veci{
-    ( $( $e:expr, if $b:expr),*$(,)* ) => ({
-        vec![
-            $(
-                if $b {Some($e)} else {None}
-            ),*
-        ].into_iter()
-        .flat_map(|a| a)
-        .collect()
-    })
-}
-
 // x=428, y=86..110
 // y=1292, x=430..432
 lazy_static! {
