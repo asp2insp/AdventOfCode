@@ -11,6 +11,7 @@ dependencies = [
  "aoc-runner-derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chomp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cute 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -176,6 +177,11 @@ dependencies = [
 [[package]]
 name = "custom_derive"
 version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "cute"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -637,6 +643,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crossbeam-epoch 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "927121f5407de9956180ff5e936fe3cf4324279280001cd56b669d28ee7e9150"
 "checksum crossbeam-utils 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2760899e32a1d58d5abb31129f8fae5de75220bc2176e77ff7c627ae45c918d9"
 "checksum custom_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "ef8ae57c4978a2acd8b869ce6b9ca1dfe817bff704c220209fdef2c0b75a01b9"
+"checksum cute 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "45e700c2d1c3feea9b695e79b2dfeeb93040556a58c556fae23f71b1e6b449fd"
 "checksum dbghelp-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "97590ba53bcb8ac28279161ca943a924d1fd4a8fb3fa63302591647c4fc5b850"
 "checksum debug-builders 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0f5d8e3d14cabcb2a8a59d7147289173c6ada77a0bc526f6b85078f941c0cf12"
 "checksum debugtrace 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "62e432bd83c5d70317f6ebd8a50ed4afb32907c64d6e2e1e65e339b06dc553f3"
