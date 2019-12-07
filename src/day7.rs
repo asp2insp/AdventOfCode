@@ -1,7 +1,6 @@
 use permutohedron::LexicalPermutation;
 use rayon::prelude::*;
 
-
 fn parse_program(input: String) -> Vec<isize> {
 	input.split(",").flat_map(str::parse::<isize>).collect()
 }
@@ -59,7 +58,7 @@ fn run_and_return_output(
 			4 => {
 				// Output 1
 				let params = get_params(1, param_modes, iptr, &program);
-				return ProgYield::Output(params[0], iptr + 2)
+				return ProgYield::Output(params[0], iptr + 2);
 			}
 			5 => {
 				// JNZ 1 to 2
@@ -100,7 +99,11 @@ fn run_and_return_output(
 }
 
 fn run_amp(mut program: &mut [isize], phase_setting: isize, in_val: isize) -> isize {
-	if let ProgYield::Output(val, iptr) = run_and_return_output(program, 0, Box::new(vec![phase_setting, in_val].into_iter())) {
+	if let ProgYield::Output(val, iptr) = run_and_return_output(
+		program,
+		0,
+		Box::new(vec![phase_setting, in_val].into_iter()),
+	) {
 		val
 	} else {
 		panic!("Program halted without output")
@@ -120,7 +123,7 @@ fn make_combos(mut settings: [isize; 5]) -> Vec<[isize; 5]> {
 	loop {
 		combos.push(settings.clone());
 		if !settings.next_permutation() {
-			break
+			break;
 		}
 	}
 	combos
@@ -128,7 +131,8 @@ fn make_combos(mut settings: [isize; 5]) -> Vec<[isize; 5]> {
 
 pub fn part1(input: String) -> String {
 	let mut program = parse_program(input);
-	let max_thrust = make_combos([0, 1, 2, 3, 4]).into_par_iter()
+	let max_thrust = make_combos([0, 1, 2, 3, 4])
+		.into_par_iter()
 		.map(|s| run_amps(&program, &s))
 		.max()
 		.unwrap();
@@ -141,21 +145,32 @@ fn loop_amps(program: &Vec<isize>, phase_settings: &[isize]) -> isize {
 	let mut iptrs: [usize; 5] = [0; 5];
 	let mut n = 0;
 	let mut out = 0;
+	let mut phase_setting_once: Vec<Option<isize>> =
+		phase_settings.iter().map(|s| Some(*s)).collect();
 	loop {
-		let res = run_and_return_output(&mut progs[n], iptrs[n], Box::new(vec![phase_settings[n], carry_val].into_iter()));
+		let res = run_and_return_output(
+			&mut progs[n],
+			iptrs[n],
+			Box::new(
+				phase_setting_once[n]
+					.take()
+					.into_iter()
+					.chain(std::iter::once(carry_val)),
+			),
+		);
 		match res {
 			ProgYield::Output(cv, iptr) => {
 				iptrs[n] = iptr;
-				carry_val= cv;
+				carry_val = cv;
 				if n == iptrs.len() - 1 {
 					out = carry_val;
 				}
-			},
+			}
 			ProgYield::Halt => {
 				if n == iptrs.len() - 1 {
-					break
+					break;
 				}
-			},
+			}
 		};
 		n = (n + 1) % iptrs.len();
 	}
@@ -164,7 +179,8 @@ fn loop_amps(program: &Vec<isize>, phase_settings: &[isize]) -> isize {
 
 pub fn part2(input: String) -> String {
 	let mut program = parse_program(input);
-	let max_thrust = make_combos([5, 6, 7, 8, 9]).into_par_iter()
+	let max_thrust = make_combos([5, 6, 7, 8, 9])
+		.into_par_iter()
 		.map(|s| loop_amps(&program, &s))
 		.max()
 		.unwrap();
@@ -173,8 +189,11 @@ pub fn part2(input: String) -> String {
 
 #[test]
 fn test_one() {
-	let mut prog = [3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5];
-	let settings = [9,8,7,6,5];
+	let mut prog = [
+		3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1, 28,
+		1005, 28, 6, 99, 0, 0, 5,
+	];
+	let settings = [9, 8, 7, 6, 5];
 	let val = loop_amps(&prog.to_vec(), &settings);
 	assert_eq!(139629729, val);
 }
