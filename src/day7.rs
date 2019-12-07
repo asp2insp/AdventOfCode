@@ -141,8 +141,9 @@ fn loop_amps(program: &Vec<isize>, phase_settings: &[isize]) -> isize {
 	let mut iptrs: [usize; 5] = [0; 5];
 	let mut n = 0;
 	let mut out = 0;
+	let mut phase_setting_once: Vec<Option<isize>> = phase_settings.iter().map(|s| Some(*s)).collect();
 	loop {
-		let res = run_and_return_output(&mut progs[n], iptrs[n], Box::new(vec![phase_settings[n], carry_val].into_iter()));
+		let res = run_and_return_output(&mut progs[n], iptrs[n], Box::new(phase_setting_once[n].take().into_iter().chain(std::iter::once(carry_val))));
 		match res {
 			ProgYield::Output(cv, iptr) => {
 				iptrs[n] = iptr;
