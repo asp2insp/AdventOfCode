@@ -1,21 +1,4 @@
 #![allow(unused)]
-#[macro_use]
-extern crate chomp;
-extern crate chrono;
-extern crate crypto;
-extern crate image;
-extern crate itertools;
-extern crate parking_lot;
-extern crate permutohedron;
-extern crate rand;
-extern crate rayon;
-extern crate regex;
-extern crate serde_json;
-extern crate time;
-
-#[macro_use]
-extern crate lazy_static;
-
 use std::collections::HashSet;
 use std::env;
 use std::fs::File;
@@ -48,9 +31,7 @@ macro_rules! run_day {
         mod $mod_name;
         fn main() {
             println!("Running {:?}...", stringify!($mod_name));
-            let mut run_one = false;
-            let mut run_two = false;
-            let mut args: HashSet<String> = env::args().skip(1).collect();
+            let args: HashSet<String> = env::args().skip(1).collect();
             if args.contains("1") {
                 println!(
                     "1> {:?}",
@@ -70,4 +51,4 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day13);
+run_day!(day14);
