@@ -132,13 +132,41 @@ fn calc_costs<'a>(reacs: &[Reaction<'a>]) -> HashMap<&'a str, Rational> {
 	costs
 }
 
+fn produce_item<'a>(item: &'a str, reacs: &[Reaction<'a>], repo: &mut HashMap<&'a str, usize>) -> usize {
+	if item == "ORE" {
+		*repo.entry("ORE").or_insert(0) += 1;
+		return 1
+	}
+	let mut cost = 0;
+	let reac = reacs.iter().find(|r| r.output.name == item).unwrap();
+	for needed in &reac.inputs {
+		while *repo.get(needed.name).unwrap_or(&0) < needed.amount {
+			cost += produce_item(needed.name, reacs, repo);
+		}
+		*repo.get_mut(needed.name).unwrap() -= needed.amount;
+	}
+	*repo.entry(item).or_insert(0) += reac.output.amount;
+	// println!("Produced {} {}", reac.output.amount, reac.output.name);
+	cost
+}
+
 pub fn part1(input: String) -> String {
 	let reacs = parse(&input);
-	format!("FUEL: {:?}", calc_costs(&reacs)["FUEL"])
+	let mut repo = HashMap::new();
+	let cost = produce_item("FUEL", &reacs, &mut repo);
+	cost.to_string()
 }
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+	let reacs = parse(&input);
+	let mut repo = HashMap::new();
+	let mut cost = 0;
+	let mut count = 0;
+	while cost <= 1_000_000_000 {
+		cost += produce_item("FUEL", &reacs, &mut repo);
+		count += 1;
+	}
+	(count - 1).to_string()
 }
 
 #[test]
@@ -160,5 +188,7 @@ fn test_small() {
 	4 C, 1 A => 1 CA
 	2 AB, 3 BC, 4 CA => 1 FUEL"#,
 	);
-	assert_eq!(Rational::new(165, 1), calc_costs(&reacs)["FUEL"]);
+	let mut repo = HashMap::new();
+	let cost = produce_item("FUEL", &reacs, &mut repo);
+	assert_eq!(165, cost);
 }
