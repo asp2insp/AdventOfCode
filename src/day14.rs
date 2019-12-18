@@ -13,7 +13,7 @@ struct Item<'a> {
 	amount: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Reaction<'a> {
 	output: Item<'a>,
 	inputs: Vec<Item<'a>>,
@@ -43,7 +43,7 @@ fn reduce<'a>(i: &Item<'a>, reacs: &[Reaction<'a>]) -> Vec<Item<'a>> {
 		.collect()
 }
 
-fn parse<'a>(input: &'a str) -> Vec<Reaction<'a>> {
+fn parse<'a>(input: &'a str) -> HashMap<&'a str, Reaction<'a>> {
 	input
 		.lines()
 		.map(|l| {
@@ -59,6 +59,7 @@ fn parse<'a>(input: &'a str) -> Vec<Reaction<'a>> {
 				output: parse_item(parts.next().unwrap()),
 			}
 		})
+		.map(|r| (r.output.name, r))
 		.collect()
 }
 
@@ -132,41 +133,86 @@ fn calc_costs<'a>(reacs: &[Reaction<'a>]) -> HashMap<&'a str, Rational> {
 	costs
 }
 
-fn produce_item<'a>(item: &'a str, reacs: &[Reaction<'a>], repo: &mut HashMap<&'a str, usize>) -> usize {
-	if item == "ORE" {
-		*repo.entry("ORE").or_insert(0) += 1;
-		return 1
+fn produce_item<'a>(
+	item: &Item<'a>,
+	reacs: &HashMap<&'a str, Reaction<'a>>,
+	repo: &mut HashMap<&'a str, usize>,
+) -> usize {
+	if item.name == "ORE" {
+		*repo.entry("ORE").or_insert(0) += item.amount;
+		return item.amount;
+	}
+	if *repo.get(item.name).unwrap_or(&0) >= item.amount {
+		return 0
 	}
 	let mut cost = 0;
-	let reac = reacs.iter().find(|r| r.output.name == item).unwrap();
-	for needed in &reac.inputs {
-		while *repo.get(needed.name).unwrap_or(&0) < needed.amount {
-			cost += produce_item(needed.name, reacs, repo);
-		}
-		*repo.get_mut(needed.name).unwrap() -= needed.amount;
+	let reac = reacs.get(item.name).unwrap();
+	let mut num_n = 1;
+	while reac.output.amount * num_n < item.amount {
+		num_n += 1;
 	}
-	*repo.entry(item).or_insert(0) += reac.output.amount;
-	// println!("Produced {} {}", reac.output.amount, reac.output.name);
+	for needed in &reac.inputs {
+		cost += produce_item(&Item{amount: needed.amount * num_n, ..*needed}, reacs, repo);
+		*repo.get_mut(needed.name).unwrap() -= needed.amount * num_n;
+	}
+	*repo.entry(item.name).or_insert(0) += reac.output.amount * num_n;
 	cost
+}
+
+fn get_depth<'a>(item: &'a str, reacs: &HashMap<&'a str, Reaction>) -> usize {
+	if item == "ORE" {
+		0
+	} else {
+		1 + reacs.get(item).expect(item).inputs.iter().map(|i| get_depth(i.name, reacs)).max().unwrap_or(0)
+	}
+}
+
+fn div_round_up(num: usize, denom: usize) -> usize {
+	if num % denom == 0 {
+		num / denom
+	} else {
+		num / denom + 1
+	}
+}
+
+fn cost_for_fuel<'a>(amount: usize, reacs: &HashMap<&'a str, Reaction<'a>>) -> usize {
+	let mut order = reacs.values().cloned().collect::<Vec<_>>();
+	order.sort_by_key(|r| get_depth(r.output.name, reacs));
+	let mut needed: HashMap<&'a str, usize> = HashMap::new();
+	needed.insert("FUEL", amount);
+	for reac in order.into_iter().rev() {
+		let num_n = div_round_up(*needed.get(reac.output.name).unwrap_or(&0), reac.output.amount);
+		needed.remove(reac.output.name);
+		reac.inputs.into_iter().for_each(|i| { *needed.entry(i.name).or_insert(0) += i.amount * num_n});
+	}
+	needed["ORE"]
 }
 
 pub fn part1(input: String) -> String {
 	let reacs = parse(&input);
-	let mut repo = HashMap::new();
-	let cost = produce_item("FUEL", &reacs, &mut repo);
-	cost.to_string()
+	cost_for_fuel(1, &reacs).to_string()
 }
+
+const INIT_ORE: usize = 1_000_000_000_000;
 
 pub fn part2(input: String) -> String {
 	let reacs = parse(&input);
-	let mut repo = HashMap::new();
-	let mut cost = 0;
-	let mut count = 0;
-	while cost <= 1_000_000_000 {
-		cost += produce_item("FUEL", &reacs, &mut repo);
-		count += 1;
+	let mut low = 1;
+	let mut high = 1_000_000_000;
+	while high > (low + 1) {
+		let guess = (high + low) / 2;
+		println!("{}, {}, {}", high, guess, low);
+
+		let cost = cost_for_fuel(guess, &reacs);
+		if cost > INIT_ORE {
+			high = guess;
+		} else if cost < INIT_ORE {
+			low = guess;
+		} else {
+			return guess.to_string();
+		}
 	}
-	(count - 1).to_string()
+	low.to_string()
 }
 
 #[test]
@@ -188,7 +234,33 @@ fn test_small() {
 	4 C, 1 A => 1 CA
 	2 AB, 3 BC, 4 CA => 1 FUEL"#,
 	);
-	let mut repo = HashMap::new();
-	let cost = produce_item("FUEL", &reacs, &mut repo);
+	let cost = cost_for_fuel(1, &reacs);
 	assert_eq!(165, cost);
+}
+
+
+#[test]
+fn test_large() {
+	let reacs = parse(
+		r#"171 ORE => 8 CNZTR
+		7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL
+		114 ORE => 4 BHXH
+		14 VRPVC => 6 BMBT
+		6 BHXH, 18 KTJDG, 12 WPTQ, 7 PLWSL, 31 FHTLT, 37 ZDVW => 1 FUEL
+		6 WPTQ, 2 BMBT, 8 ZLQW, 18 KTJDG, 1 XMNCP, 6 MZWV, 1 RJRHP => 6 FHTLT
+		15 XDBXC, 2 LTCX, 1 VRPVC => 6 ZLQW
+		13 WPTQ, 10 LTCX, 3 RJRHP, 14 XMNCP, 2 MZWV, 1 ZLQW => 1 ZDVW
+		5 BMBT => 4 WPTQ
+		189 ORE => 9 KTJDG
+		1 MZWV, 17 XDBXC, 3 XCVML => 2 XMNCP
+		12 VRPVC, 27 CNZTR => 2 XDBXC
+		15 KTJDG, 12 BHXH => 5 XCVML
+		3 BHXH, 2 VRPVC => 7 MZWV
+		121 ORE => 7 VRPVC
+		7 XCVML => 6 RJRHP
+		5 BHXH, 4 VRPVC => 5 LTCX"#,
+	);
+	let cost = cost_for_fuel(1, &reacs);
+	assert_eq!(2210736, cost);
+	assert_eq!(999998346916, cost_for_fuel(460664, &reacs))
 }
