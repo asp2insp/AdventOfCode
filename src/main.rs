@@ -4,6 +4,8 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
+mod intcode;
+
 fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
     let mut f = File::open(path).unwrap();
@@ -51,4 +53,4 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day15);
+run_day!(day17);
