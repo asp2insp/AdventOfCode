@@ -1,13 +1,13 @@
-use itertools::*;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
 
-fn parse_program(input: String) -> Vec<isize> {
+pub fn parse_program(input: String) -> Vec<isize> {
 	input.split(",").flat_map(str::parse::<isize>).collect()
 }
 
 #[derive(PartialEq, Debug)]
-enum ProgYield {
+pub enum ProgYield {
 	Output(isize),
+	Input,
 	Halt,
 }
 
@@ -15,12 +15,12 @@ impl ProgYield {
 	fn unwrap(self) -> isize {
 		match self {
 			ProgYield::Output(i) => i,
-			ProgYield::Halt => panic!("unwrap called on a halt instruction"),
+			_ => panic!("unwrap called on a halt/input instruction"),
 		}
 	}
 }
 
-struct Computer {
+pub struct Computer {
 	program: Vec<isize>,
 	iptr: usize,
 	input: VecDeque<isize>,
@@ -28,7 +28,7 @@ struct Computer {
 }
 
 impl Computer {
-	fn new(prog: Vec<isize>) -> Computer {
+	pub fn new(prog: Vec<isize>) -> Computer {
 		Computer {
 			program: prog,
 			iptr: 0,
@@ -37,8 +37,12 @@ impl Computer {
 		}
 	}
 
-	fn input(&mut self, item: isize) {
+	pub fn input(&mut self, item: isize) {
 		self.input.push_back(item);
+	}
+
+	pub fn set(&mut self, loc: usize, item: isize) {
+		self.program[loc] = item;
 	}
 
 	fn check_dest(&mut self, offset: usize, param_modes: isize) -> usize {
@@ -87,7 +91,7 @@ impl Computer {
 		ret
 	}
 
-	fn run_and_return_output(&mut self) -> ProgYield {
+	pub fn run_and_return_output(&mut self) -> ProgYield {
 		loop {
 			let opcode = self.program[self.iptr] % 100;
 			let param_modes = self.program[self.iptr] / 100;
@@ -109,6 +113,9 @@ impl Computer {
 				3 => {
 					// Input and store 1
 					let dest = self.check_dest(1, param_modes);
+					if self.input.is_empty() {
+						return ProgYield::Input;
+					}
 					self.program[dest] = self.input.pop_front().unwrap();
 					self.iptr += 2;
 				}
@@ -161,74 +168,4 @@ impl Computer {
 			}
 		}
 	}
-}
-
-const UP: (isize, isize) = (0, 1);
-const DOWN: (isize, isize) = (0, -1);
-const LEFT: (isize, isize) = (-1, 0);
-const RIGHT: (isize, isize) = (1, 0);
-const TURN_LEFT: isize = 0;
-const TURN_RIGHT: isize = 1;
-
-fn paint_hull(c: &mut Computer) -> BTreeMap<(isize, isize), isize> {
-	let mut hull: BTreeMap<(isize, isize), isize> = BTreeMap::new();
-	let mut x = 1000isize;
-	let mut y = 1000isize;
-	let mut dir = (0isize, 1isize);
-	while let ProgYield::Output(paint) = c.run_and_return_output() {
-		hull.insert((x, y), paint);
-		dir = match (dir, c.run_and_return_output().unwrap()) {
-			(UP, TURN_LEFT) => LEFT,
-			(UP, TURN_RIGHT) => RIGHT,
-			(DOWN, TURN_LEFT) => RIGHT,
-			(DOWN, TURN_RIGHT) => LEFT,
-			(RIGHT, TURN_RIGHT) => DOWN,
-			(RIGHT, TURN_LEFT) => UP,
-			(LEFT, TURN_LEFT) => DOWN,
-			(LEFT, TURN_RIGHT) => UP,
-			_ => unreachable!(),
-		};
-		x += dir.0;
-		y += dir.1;
-		c.input(*hull.get(&(x, y)).unwrap_or(&0));
-	}
-	hull
-}
-
-pub fn part1(input: String) -> String {
-	let mut c = Computer::new(parse_program(input));
-	c.input(0);
-	let hull = paint_hull(&mut c);
-	hull.values().count().to_string()
-}
-
-pub fn part2(input: String) -> String {
-	let mut c = Computer::new(parse_program(input));
-	c.input(1);
-	let hull = paint_hull(&mut c);
-	let (min_x, min_y, max_x, max_y) =
-		hull.keys()
-			.fold((isize::max_value(), isize::max_value(), 0, 0), |curr, n| {
-				(
-					curr.0.min(n.0),
-					curr.1.min(n.1),
-					curr.2.max(n.0),
-					curr.3.max(n.1),
-				)
-			});
-	let mut output = vec![vec![0isize; (max_x + 1 - min_x) as usize]; (max_y + 1 - min_y) as usize];
-	for ((x, y), paint) in hull.iter() {
-		output[(y - min_y) as usize][(x - min_x) as usize] = *paint;
-	}
-	let ans = output
-		.into_iter()
-		.rev()
-		.map(|l| {
-			l.into_iter()
-				.map(|n| if n == 0 { " " } else { "█" })
-				.collect::<String>()
-		})
-		.join("\n");
-	println!("{}", ans);
-	"^^".to_string()
 }
