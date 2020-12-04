@@ -53,8 +53,4 @@ macro_rules! run_day {
     };
 }
 
-<<<<<<< HEAD
 run_day!(day1);
-=======
-run_day!(day18);
->>>>>>> abec9d71a84be30fac71c8d211cd7cb8502628ca
