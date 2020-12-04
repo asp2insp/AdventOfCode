@@ -70,4 +70,4 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day13);
+run_day!(day1);
