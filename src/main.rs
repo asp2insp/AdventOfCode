@@ -4,6 +4,8 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
+mod computer;
+
 fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
     let mut f = File::open(path).unwrap();
