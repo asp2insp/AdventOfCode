@@ -1,12 +1,25 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::HashSet;
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
 use image::{Rgb, ImageBuffer};
 use std::path::Path;
+use lazy_static::lazy_static;
+
+
+macro_rules! veci {
+    ( $( $e:expr, if $b:expr),*$(,)* ) => ({
+        vec![
+            $(
+                if $b {Some($e)} else {None}
+            ),*
+        ].into_iter()
+        .flat_map(|a| a)
+        .collect()
+    })
+}
 
 // x=428, y=86..110
 // y=1292, x=430..432

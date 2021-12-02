@@ -5,7 +5,6 @@ use regex::*;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem;
-use time::Duration;
 
 const SIZE: usize = 33;
 const AP: isize = 3;

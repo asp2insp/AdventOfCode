@@ -1,5 +1,6 @@
 use regex::*;
 use itertools::*;
+use lazy_static::lazy_static;
 
 lazy_static! {
     static ref RE: Regex = Regex::new(r"\s*(\w+) (\d+) (\d+) (\d+)").unwrap();

@@ -1,10 +1,10 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::HashMap;
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
+use lazy_static::lazy_static;
 
 const SIZE: usize = 300;
 const SERIAL: isize = 1788;
@@ -12,7 +12,7 @@ const SERIAL: isize = 1788;
 lazy_static! {
     static ref GRID: [[isize; SIZE]; SIZE] = {
         let mut grid = [[0isize; SIZE]; SIZE];
-        (0..SIZE).cartesian_product(0..SIZE).foreach(|(x,y)| {
+        (0..SIZE).cartesian_product(0..SIZE).for_each(|(x,y)| {
             grid[x][y] = (0..x).cartesian_product(0..y)
                 .map(|(xp, yp)| power_level(xp, yp))
                 .sum();

@@ -1,7 +1,6 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::{HashMap, VecDeque};
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
@@ -73,7 +72,7 @@ pub fn part1(input: String) -> String {
         }
         // println!("[{}] {:?}", player + 1, marbles);
     }
-    format!("{}", scores.into_iter().max().unwrap())
+    format!("{}", scores.iter().max().unwrap())
 }
 
 
@@ -92,5 +91,5 @@ pub fn part2(input: String) -> String {
         }
         // println!("[{}] {:?}", player + 1, marbles);
     }
-    format!("{}", scores.into_iter().max().unwrap())
+    format!("{}", scores.iter().max().unwrap())
 }

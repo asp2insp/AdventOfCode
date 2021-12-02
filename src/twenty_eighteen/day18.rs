@@ -1,5 +1,18 @@
 use std::collections::HashMap;
 
+
+macro_rules! veci {
+    ( $( $e:expr, if $b:expr),*$(,)* ) => ({
+        vec![
+            $(
+                if $b {Some($e)} else {None}
+            ),*
+        ].into_iter()
+        .flat_map(|a| a)
+        .collect()
+    })
+}
+
 const SIZE: usize = 50;
 
 struct World {

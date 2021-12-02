@@ -1,10 +1,10 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::HashMap;
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
+use lazy_static::lazy_static;
 
 lazy_static! {
     static ref RE: Regex = Regex::new(r"(?P<pat>[#.]+) => (?P<res>[#.])").unwrap();

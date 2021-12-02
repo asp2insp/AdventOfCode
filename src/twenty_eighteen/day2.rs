@@ -13,7 +13,7 @@ pub fn part1(input: String) -> String {
                 })
             })
             .fold([0, 0], |acc, n| [acc[0] + n.0, acc[1] + n.1])
-        .into_iter()
+        .iter()
         .fold(1, |prod, n| prod * n)
     )
 }

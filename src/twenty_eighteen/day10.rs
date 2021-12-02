@@ -1,12 +1,12 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::HashMap;
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
 use image::{Luma, ImageBuffer};
 use std::path::Path;
+use lazy_static::lazy_static;
 
 const SIZE: u32 = 200;
 

@@ -1,11 +1,11 @@
 use itertools::*;
 use chrono::{NaiveDateTime,Timelike};
 use std::collections::{HashMap,HashSet};
-use time::Duration;
 use rayon::prelude::*;
 use regex::*;
 use std::mem;
 use permutohedron::LexicalPermutation;
+use lazy_static::lazy_static;
 
 lazy_static! {
     static ref RE: Regex = Regex::new(r"\w+:\s+\[(\d+), (\d+), (\d+), (\d+)\]").unwrap();

@@ -4,6 +4,11 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
+// mod twenty_fifteen;
+// mod twenty_sixteen;
+// mod twenty_seventeen;
+mod twenty_eighteen;
+
 fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
     let mut f = File::open(path).unwrap();
@@ -12,7 +17,7 @@ fn get_input(mod_name: &str) -> String {
     s.trim().to_string()
 }
 
-macro_rules! veci{
+macro_rules! veci {
     ( $( $e:expr, if $b:expr),*$(,)* ) => ({
         vec![
             $(
@@ -47,8 +52,12 @@ macro_rules! run_day {
             if !args.contains("1") && !args.contains("2") {
                 println!("Specify part 1 or part 2");
             }
+
+            
+            println!("Old: {:?}", twenty_eighteen::day20::part1(get_input("twenty_eighteen/day19")));
+            println!("Old: {:?}", twenty_eighteen::day20::part2(get_input("twenty_eighteen/day19")));
         }
     };
 }
 
-run_day!(day1);
+run_day!(day2);
