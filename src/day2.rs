@@ -1,12 +1,13 @@
+
 pub fn part1(input: String) -> String {
 	let mut depth: usize = 0;
 	let mut pos: usize = 0;
 	for l in input.lines() {
 		let d = l.split_whitespace().collect::<Vec<_>>();
 		match d[0] {
-			"forward" => pos += d[1].parse::<usize>().unwrap(),
-			"down" => depth += d[1].parse::<usize>().unwrap(),
-			"up" => depth -= d[1].parse::<usize>().unwrap(),
+			"forward" => pos += parse!(d[1], usize),
+			"down" => depth += parse!(d[1], usize),
+			"up" => depth -= parse!(d[1], usize),
 			_ => unimplemented!(),
 		};
 	}
@@ -22,12 +23,12 @@ pub fn part2(input: String) -> String {
 		let d = l.split_whitespace().collect::<Vec<_>>();
 		match d[0] {
 			"forward" => {
-				let num = d[1].parse::<isize>().unwrap();
+				let num = parse!(d[1], isize);
 				pos += num;
 				depth += aim * num; 
 			},
-			"down" => aim += d[1].parse::<isize>().unwrap(),
-			"up" => aim -= d[1].parse::<isize>().unwrap(),
+			"down" => aim += parse!(d[1], isize),
+			"up" => aim -= parse!(d[1], isize),
 			_ => unimplemented!(),
 		};
 	}

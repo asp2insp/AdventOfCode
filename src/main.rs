@@ -4,6 +4,9 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
+#[macro_use]
+mod macros;
+
 // mod twenty_fifteen;
 // mod twenty_sixteen;
 // mod twenty_seventeen;
@@ -15,18 +18,6 @@ fn get_input(mod_name: &str) -> String {
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
     s.trim().to_string()
-}
-
-macro_rules! veci {
-    ( $( $e:expr, if $b:expr),*$(,)* ) => ({
-        vec![
-            $(
-                if $b {Some($e)} else {None}
-            ),*
-        ].into_iter()
-        .flat_map(|a| a)
-        .collect()
-    })
 }
 
 macro_rules! run_day {

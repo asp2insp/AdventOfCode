@@ -1,8 +1,9 @@
 [package]
 authors = ["Josiah Gaskin <josiah@optimizely.com>"]
-edition = "2018"
+edition = "2021"
 name = "advent-of-code"
 version = "0.1.0"
+
 [dependencies]
 chrono = "0.4"
 cute = "0.3"
