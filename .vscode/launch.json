@@ -10,7 +10,7 @@
             "name": "Debug executable 'advent-of-code'",
             "cargo": {
                 "args": [
-                    "build",
+                    "run",
                     "--bin=advent-of-code",
                     "--package=advent-of-code"
                 ],
