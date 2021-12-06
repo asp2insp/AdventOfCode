@@ -19,6 +19,17 @@ pub trait IterUtils: Iterator {
             map
         })
     }
+
+    fn counting_set_by<T: Hash + Eq, F: Fn(Self::Item) -> T>(self, f: F) -> HashMap<T, usize>
+    where
+        Self: Sized,
+    {
+        self.fold(HashMap::new(), |mut map, it| {
+            let key = f(it);
+            *map.entry(key).or_insert(0) += 1;
+            map
+        })
+    }
 }
 
 impl<T: ?Sized> IterUtils for T where T: Iterator {}
@@ -303,7 +314,11 @@ impl<T> Grid<T> {
         let mut stack = Vec::new();
         stack.push((pt1, 0));
         loop {
-            let (curr, cost) = stack.pop().expect(&format!("Dead end! found {} out of {}", results.len(), dests.len()));
+            let (curr, cost) = stack.pop().expect(&format!(
+                "Dead end! found {} out of {}",
+                results.len(),
+                dests.len()
+            ));
             if dests.contains(&curr) && !results.contains_key(&curr) {
                 let mut traceback = curr;
                 let mut ret_path = vec![traceback];
