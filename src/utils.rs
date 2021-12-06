@@ -1,4 +1,6 @@
 use itertools::*;
+use std::any::TypeId;
+use std::cell::Cell;
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -21,11 +23,26 @@ pub trait IterUtils: Iterator {
 
 impl<T: ?Sized> IterUtils for T where T: Iterator {}
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Direction {
     N,
     S,
     E,
     W,
+}
+
+impl Direction {
+    pub fn from_char(c: char) -> Result<Direction, ()> {
+        use Direction::*;
+
+        match c {
+            'N' | 'n' => Ok(N),
+            'S' | 's' => Ok(S),
+            'E' | 'e' => Ok(E),
+            'W' | 'w' => Ok(W),
+            _ => Err(()),
+        }
+    }
 }
 
 impl FromStr for Direction {
@@ -36,13 +53,7 @@ impl FromStr for Direction {
         if s.len() != 1 {
             return Err(());
         }
-        match s.chars().next().unwrap() {
-            'N' => Ok(N),
-            'S' => Ok(S),
-            'E' => Ok(E),
-            'W' => Ok(W),
-            _ => Err(()),
-        }
+        Direction::from_char(s.chars().next().ok_or(())?)
     }
 }
 
@@ -73,14 +84,14 @@ impl<T> Default for Grid<T> {
 }
 
 impl<T> Grid<T> {
-    fn new(s: &str, t: T) -> Grid<T>
+    pub fn new(s: &str, t: T) -> Grid<T>
     where
         T: Clone,
     {
         Self::new_with(s, |_| t.clone())
     }
 
-    fn new_with(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
+    pub fn new_with(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
         let mut m = HashMap::new();
         for (li, l) in s.lines().rev().enumerate() {
             for (ci, c) in l.chars().enumerate() {
@@ -101,7 +112,7 @@ impl<T> Grid<T> {
         }
     }
 
-    fn new_with_bounds(
+    pub fn new_with_bounds(
         left: isize,
         bottom: isize,
         right: isize,
@@ -129,15 +140,15 @@ impl<T> Grid<T> {
         }
     }
 
-    fn has_walls(&self) -> bool {
+    pub fn has_walls(&self) -> bool {
         self.wall_char != '\0'
     }
 
-    fn has_bounds(&self) -> bool {
+    pub fn has_bounds(&self) -> bool {
         self.left_bound != self.right_bound || self.top_bound != self.bottom_bound
     }
 
-    fn in_bounds(&self, x: isize, y: isize) -> bool {
+    pub fn in_bounds(&self, x: isize, y: isize) -> bool {
         if !self.has_bounds() {
             true
         } else {
@@ -149,7 +160,7 @@ impl<T> Grid<T> {
     }
 
     // left, bottom, right, top
-    fn get_bounds(&self) -> (isize, isize, isize, isize) {
+    pub fn get_bounds(&self) -> (isize, isize, isize, isize) {
         if self.has_bounds() {
             (
                 self.left_bound,
@@ -173,7 +184,7 @@ impl<T> Grid<T> {
         }
     }
 
-    fn get(&self, x: isize, y: isize) -> Option<&(char, T)> {
+    pub fn get(&self, x: isize, y: isize) -> Option<&(char, T)> {
         if !self.in_bounds(x, y) {
             None
         }
@@ -185,17 +196,17 @@ impl<T> Grid<T> {
         }
     }
 
-    fn set(&mut self, x: isize, y: isize, c: char, t: T) {
+    pub fn set(&mut self, x: isize, y: isize, c: char, t: T) {
         if self.in_bounds(x, y) {
             self.map.insert((x, y), (c, t));
         }
     }
 
-    fn iter_contents<'a>(&'a self) -> impl Iterator<Item = (isize, isize, &'a T)> {
+    pub fn iter_contents<'a>(&'a self) -> impl Iterator<Item = (isize, isize, &'a T)> {
         self.map.iter().map(|(xy, ct)| (xy.0, xy.1, &ct.1))
     }
 
-    fn iter_chars(&self) -> impl Iterator<Item = (isize, isize, char)> {
+    pub fn iter_chars(&self) -> impl Iterator<Item = (isize, isize, char)> {
         self.map
             .iter()
             .map(|(xy, ct)| (xy.0, xy.1, ct.0))
@@ -203,7 +214,22 @@ impl<T> Grid<T> {
             .into_iter()
     }
 
-    fn iter_range(
+    pub fn fill_with(
+        &mut self,
+        xrange: Option<RangeInclusive<isize>>,
+        yrange: Option<RangeInclusive<isize>>,
+        f: impl Fn(isize, isize) -> (char, T),
+    ) {
+        let (l, bt, r, tp) = self.get_bounds();
+        let xrange = xrange.unwrap_or(l..=r);
+        let yrange = yrange.unwrap_or(bt..=tp);
+        xrange.cartesian_product(yrange).for_each(|(x, y)| {
+            let (c, t) = f(x, y);
+            self.set(x, y, c, t);
+        });
+    }
+
+    pub fn iter_range(
         &self,
         xrange: Option<RangeInclusive<isize>>,
         yrange: Option<RangeInclusive<isize>>,
@@ -216,7 +242,7 @@ impl<T> Grid<T> {
             .filter_map(|(x, y)| self.get(x, y).map(|ct| (x, y, ct.0, &ct.1)))
     }
 
-    fn is_wall(&self, x: isize, y: isize) -> bool {
+    pub fn is_wall(&self, x: isize, y: isize) -> bool {
         self.has_walls()
             && self
                 .get(x, y)
@@ -224,7 +250,7 @@ impl<T> Grid<T> {
                 .unwrap_or(false)
     }
 
-    fn drive(&self, x: isize, y: isize, d: Direction) -> Option<(isize, isize)> {
+    pub fn drive(&self, x: isize, y: isize, d: Direction) -> Option<(isize, isize)> {
         use Direction::*;
 
         let mut xnew = x;
@@ -242,7 +268,7 @@ impl<T> Grid<T> {
         }
     }
 
-    fn neighbors(&self, x: isize, y: isize) -> impl Iterator<Item = (isize, isize)> {
+    pub fn neighbors(&self, x: isize, y: isize) -> impl Iterator<Item = (isize, isize)> {
         use Direction::*;
 
         vec![
@@ -255,31 +281,54 @@ impl<T> Grid<T> {
         .filter_map(|n| n)
     }
 
-    fn dfs_path(
+    pub fn dfs_path(
         &self,
         pt1: (isize, isize),
         pt2: (isize, isize),
         weight: Option<impl Fn(isize, isize) -> isize>,
     ) -> (isize, Vec<(isize, isize)>) {
+        let mut results = self.dfs_path_bulk(pt1, makeset! {pt2}, weight);
+        results.remove(&pt2).unwrap()
+    }
+
+    pub fn dfs_path_bulk(
+        &self,
+        pt1: (isize, isize),
+        dests: HashSet<(isize, isize)>,
+        weight: Option<impl Fn(isize, isize) -> isize>,
+    ) -> HashMap<(isize, isize), (isize, Vec<(isize, isize)>)> {
         // Maps point => cost, parent_point
         let mut seen: HashMap<(isize, isize), (isize, (isize, isize))> = HashMap::new();
+        let mut results = HashMap::new();
         let mut stack = Vec::new();
         stack.push((pt1, 0));
         loop {
-            let (mut curr, cost) = stack.pop().expect("Dead end!");
-            if curr == pt2 {
-                let mut ret_path = vec![curr];
-                while curr != pt1 {
-                    curr = seen.get(&curr).unwrap().1;
-                    ret_path.push(curr);
+            let (curr, cost) = stack.pop().expect(&format!("Dead end! found {} out of {}", results.len(), dests.len()));
+            if dests.contains(&curr) && !results.contains_key(&curr) {
+                let mut traceback = curr;
+                let mut ret_path = vec![traceback];
+                while traceback != pt1 {
+                    traceback = seen.get(&traceback).unwrap().1;
+                    ret_path.push(traceback);
                 }
-                return (cost, ret_path);
+                results.insert(curr, (cost, ret_path));
+                if results.len() == dests.len() {
+                    return results;
+                }
             }
-            // Otherwise, enqueue stepwise costs from this to all neighbors
+            // enqueue stepwise costs from this to all neighbors
             for (nx, ny) in self.neighbors(curr.0, curr.1) {
                 let w = weight.as_ref().map(|f| f(nx, ny)).unwrap_or(1);
+                if w == isize::MAX {
+                    seen.insert((nx, ny), (isize::MAX, curr));
+                    continue;
+                }
                 // If we've already seen a lower cost, skip this one
-                if seen.get(&(nx, ny)).map(|(old, _)| *old <= cost + w).unwrap_or(false) {
+                if seen
+                    .get(&(nx, ny))
+                    .map(|(old, _)| *old <= cost + w)
+                    .unwrap_or(false)
+                {
                     continue;
                 }
                 seen.insert((nx, ny), (cost + w, curr));
@@ -343,7 +392,20 @@ mod test {
                 .unwrap_or(0)
         };
         let (path_cost, path) = g.dfs_path((1, 1), (3, 7), Some(&cost_fn));
-        assert_eq!(vec![(3, 7), (3, 6), (3, 5), (3, 4), (3, 3), (3, 2), (3, 1), (2, 1), (1, 1)], path);
+        assert_eq!(
+            vec![
+                (3, 7),
+                (3, 6),
+                (3, 5),
+                (3, 4),
+                (3, 3),
+                (3, 2),
+                (3, 1),
+                (2, 1),
+                (1, 1)
+            ],
+            path
+        );
         assert_eq!(4, path_cost);
         assert_eq!(9, g.dfs_path((1, 11), (9, 9), Some(&cost_fn)).0);
     }

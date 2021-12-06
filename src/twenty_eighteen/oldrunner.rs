@@ -9,7 +9,7 @@ fn get_input(mod_name: &str) -> String {
 macro_rules! run_day {
     // this macro takes an argument of "type" `ident`
     // the `ident` designator is used for variable/function names
-    ($mod_name:ident) => (
+    ($mod_name:ident) => {
         println!("Running {:?}...", stringify!($mod_name));
         let mut run_one = false;
         let mut run_two = false;
@@ -19,28 +19,34 @@ macro_rules! run_day {
                 match s.as_str() {
                     "1" => run_one = true,
                     "2" => run_two = true,
-                    _ => {},
+                    _ => {}
                 };
-            },
-            None => {},
+            }
+            None => {}
         };
         match args.next() {
             Some(s) => {
                 match s.as_str() {
                     "1" => run_one = true,
                     "2" => run_two = true,
-                    _ => {},
+                    _ => {}
                 };
-            },
-            None => {},
+            }
+            None => {}
         };
         if run_one {
-            println!("1> {:?}", $mod_name::part1(get_input(stringify!($mod_name))));
+            println!(
+                "1> {:?}",
+                $mod_name::part1(get_input(stringify!($mod_name)))
+            );
         }
         if run_two {
-            println!("2> {:?}", $mod_name::part2(get_input(stringify!($mod_name))));
+            println!(
+                "2> {:?}",
+                $mod_name::part2(get_input(stringify!($mod_name)))
+            );
         }
-    )
+    };
 }
 
 mod day1;

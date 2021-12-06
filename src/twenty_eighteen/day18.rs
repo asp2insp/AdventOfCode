@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 macro_rules! veci {
     ( $( $e:expr, if $b:expr),*$(,)* ) => ({
         vec![
@@ -25,14 +24,12 @@ impl World {
         s.chars()
             .filter(|c| !c.is_whitespace())
             .enumerate()
-            .for_each(|(i, c)| m[i/SIZE][i%SIZE] = c);
-        World {map: m}
+            .for_each(|(i, c)| m[i / SIZE][i % SIZE] = c);
+        World { map: m }
     }
 
     fn to_string(&self) -> String {
-        self.map.iter()
-        .flat_map(|r| r.iter())
-        .collect()
+        self.map.iter().flat_map(|r| r.iter()).collect()
     }
 
     // returns (trees, lumberyards, clearground)
@@ -46,18 +43,17 @@ impl World {
             self.map[y-1][x],   if y > 0,
             self.map[y-1][x+1], if x < SIZE-1 && y > 0,
 
-            // 3 4 5 
+            // 3 4 5
             self.map[y][x-1], if x > 0,
             // self is not adjacent to self
             self.map[y][x+1], if x < SIZE-1,
-            
+
             // 6 7 8
             self.map[y+1][x-1], if x > 0 && y < SIZE-1,
             self.map[y+1][x],   if y < SIZE-1,
             self.map[y+1][x+1], if x < SIZE-1 && y < SIZE-1,
         ];
-        v.into_iter()
-        .fold((0,0,0), |mut acc, n| {
+        v.into_iter().fold((0, 0, 0), |mut acc, n| {
             match n {
                 '|' => acc.0 += 1,
                 '#' => acc.1 += 1,
@@ -81,9 +77,7 @@ impl World {
                 }
             }
         }
-        World {
-            map: m,
-        }
+        World { map: m }
     }
 }
 
@@ -92,11 +86,13 @@ pub fn part1(input: String) -> String {
     for i in 0..10 {
         map = map.step();
     }
-    let counts = map.map.iter()
+    let counts = map
+        .map
+        .iter()
         .flat_map(|r| r.iter())
         .fold((0, 0), |acc, n| match n {
             '|' => (acc.0 + 1, acc.1),
-            '#' => (acc.0, acc.1+1),
+            '#' => (acc.0, acc.1 + 1),
             _ => acc,
         });
     (counts.0 * counts.1).to_string()
@@ -113,15 +109,17 @@ pub fn part2(input: String) -> String {
     }
     let len = cycle - seen.get(&map.to_string()).unwrap();
     println!("Found cycle after {} minutes of length {}", cycle, len);
-    for _ in 0..((1_000_000_000-cycle) % len) {
+    for _ in 0..((1_000_000_000 - cycle) % len) {
         map = map.step();
     }
-    let counts = map.map.iter()
+    let counts = map
+        .map
+        .iter()
         .flat_map(|r| r.iter())
         .fold((0, 0), |acc, n| match n {
             '|' => (acc.0 + 1, acc.1),
-            '#' => (acc.0, acc.1+1),
+            '#' => (acc.0, acc.1 + 1),
             _ => acc,
         });
-    (counts.0 * counts.1).to_string() 
+    (counts.0 * counts.1).to_string()
 }

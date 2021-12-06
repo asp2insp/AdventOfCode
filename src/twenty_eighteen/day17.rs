@@ -1,13 +1,12 @@
+use chrono::{NaiveDateTime, Timelike};
+use image::{ImageBuffer, Rgb};
 use itertools::*;
-use chrono::{NaiveDateTime,Timelike};
-use std::collections::HashSet;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
 use regex::*;
+use std::collections::HashSet;
 use std::mem;
-use image::{Rgb, ImageBuffer};
 use std::path::Path;
-use lazy_static::lazy_static;
-
 
 macro_rules! veci {
     ( $( $e:expr, if $b:expr),*$(,)* ) => ({
@@ -24,7 +23,8 @@ macro_rules! veci {
 // x=428, y=86..110
 // y=1292, x=430..432
 lazy_static! {
-    static ref RE: Regex = Regex::new(r"(?P<axis>x|y)=(?P<pcoord>\d+), (x|y)=(?P<sstart>\d+)..(?P<send>\d+)").unwrap();
+    static ref RE: Regex =
+        Regex::new(r"(?P<axis>x|y)=(?P<pcoord>\d+), (x|y)=(?P<sstart>\d+)..(?P<send>\d+)").unwrap();
 }
 
 #[derive(Eq, PartialEq, Hash, Debug, Copy, Clone)]
@@ -33,7 +33,7 @@ struct Point {
     y: usize,
 }
 
-const SPRING: Point = Point {x: 500, y: 0};
+const SPRING: Point = Point { x: 500, y: 0 };
 
 struct World {
     clay: HashSet<Point>,
@@ -46,24 +46,41 @@ impl World {
     fn to_string(&self) -> String {
         let min_x = self.clay.iter().min_by_key(|p| p.x).unwrap().x - 1;
         let max_x = self.clay.iter().max_by_key(|p| p.x).unwrap().x + 1;
-        (self.top..=self.bottom).map(|y| {
-            (min_x..=max_x)
-                .map(|x| Point {x,y})
-                .map(|p| if self.water.contains(&p) {
-                    '~'
-                } else if self.clay.contains(&p) {
-                    '#'
-                } else {
-                    '.'
-                })
-                .collect::<String>()
-        })
-        .join("\n")
+        (self.top..=self.bottom)
+            .map(|y| {
+                (min_x..=max_x)
+                    .map(|x| Point { x, y })
+                    .map(|p| {
+                        if self.water.contains(&p) {
+                            '~'
+                        } else if self.clay.contains(&p) {
+                            '#'
+                        } else {
+                            '.'
+                        }
+                    })
+                    .collect::<String>()
+            })
+            .join("\n")
     }
 
     fn make_image(&self, path: &Path) {
-        let min_x = self.clay.iter().chain(self.water.iter()).min_by_key(|p| p.x).unwrap().x - 1;
-        let max_x = self.clay.iter().chain(self.water.iter()).max_by_key(|p| p.x).unwrap().x + 2;
+        let min_x = self
+            .clay
+            .iter()
+            .chain(self.water.iter())
+            .min_by_key(|p| p.x)
+            .unwrap()
+            .x
+            - 1;
+        let max_x = self
+            .clay
+            .iter()
+            .chain(self.water.iter())
+            .max_by_key(|p| p.x)
+            .unwrap()
+            .x
+            + 2;
         let width = (max_x - min_x + 10) as u32;
         let height = (self.bottom + 10) as u32;
         let mut img = ImageBuffer::from_pixel(width, height, Rgb([220, 220, 180]));
@@ -81,17 +98,11 @@ impl World {
     }
 
     fn is_clay_under(&self, p: Point) -> bool {
-        self.clay.contains(&Point {
-            y: p.y+1,
-            ..p
-        })
+        self.clay.contains(&Point { y: p.y + 1, ..p })
     }
 
     fn is_water_under(&self, p: Point) -> bool {
-        self.water.contains(&Point {
-            y: p.y+1,
-            ..p
-        })
+        self.water.contains(&Point { y: p.y + 1, ..p })
     }
 
     fn will_fall(&self, p: Point) -> bool {
@@ -101,9 +112,8 @@ impl World {
     fn fill_rect(&mut self, tl: Point, br: Point) {
         let top = self.top;
         let bottom = self.bottom;
-        self.water.extend(rect(tl, br)
-                .filter(|p| p.y >= top && p.y <= bottom)
-        );
+        self.water
+            .extend(rect(tl, br).filter(|p| p.y >= top && p.y <= bottom));
     }
 
     // Return the furthest point in the given direction before a wall or fall
@@ -111,13 +121,16 @@ impl World {
     fn get_fill_until_wall_or_drip(&self, p: Point, dir: isize) -> (Point, bool) {
         let mut next = p;
         loop {
-            let next_next = Point { x: if dir > 0 {next.x+1} else {next.x-1}, ..next };
+            let next_next = Point {
+                x: if dir > 0 { next.x + 1 } else { next.x - 1 },
+                ..next
+            };
             if self.clay.contains(&next_next) {
-                return (next, self.will_fall(next))
+                return (next, self.will_fall(next));
             } else if self.will_fall(next_next) && self.is_clay_under(next) {
-                return (next_next, true)
+                return (next_next, true);
             } else if self.will_fall(next_next) && self.is_water_under(next) {
-                return (next, true)
+                return (next, true);
             } else {
                 next = next_next;
             }
@@ -128,9 +141,9 @@ impl World {
     fn fill_down_until_clay(&mut self, mut p: Point) -> Option<Point> {
         while !self.is_clay_under(p) {
             if p.y > self.bottom {
-                return None
+                return None;
             }
-            p = Point { y: p.y+1, ..p };
+            p = Point { y: p.y + 1, ..p };
             if p.y >= self.top {
                 self.water.insert(p);
             }
@@ -149,9 +162,9 @@ impl World {
                 return veci![
                     left, if ldrips,
                     right, if rdrips,
-                ]
+                ];
             }
-            p = Point {y: p.y-1, ..p};
+            p = Point { y: p.y - 1, ..p };
         }
     }
 }
@@ -168,10 +181,10 @@ fn parse_lines(s: &str) -> World {
             clay.extend(
                 (sstart..=send)
                     .map(|b| (pcoord, b))
-                    .map(|(a,b)| if &cap["axis"] == "x" {(a,b)} else {(b,a)})
-                    .map(|(x,y)| Point{x, y})
+                    .map(|(a, b)| if &cap["axis"] == "x" { (a, b) } else { (b, a) })
+                    .map(|(x, y)| Point { x, y })
                     .inspect(|p| top = top.min(p.y))
-                    .inspect(|p| bottom = bottom.max(p.y))
+                    .inspect(|p| bottom = bottom.max(p.y)),
             );
         }
     }
@@ -183,10 +196,10 @@ fn parse_lines(s: &str) -> World {
     }
 }
 
-fn rect(tl: Point, br: Point) -> impl Iterator<Item=Point> {
+fn rect(tl: Point, br: Point) -> impl Iterator<Item = Point> {
     (tl.x..=br.x)
         .cartesian_product((tl.y..=br.y))
-        .map(|(x,y)| Point { x, y })
+        .map(|(x, y)| Point { x, y })
 }
 
 fn run_simulation(world: &mut World) {
@@ -195,10 +208,12 @@ fn run_simulation(world: &mut World) {
     falling.insert(SPRING);
     let mut i = 0;
     while filling.len() > 0 || falling.len() > 0 {
-        let next_filling = falling.into_iter()
+        let next_filling = falling
+            .into_iter()
             .flat_map(|tl| world.fill_down_until_clay(tl))
             .collect();
-        let next_falling = filling.into_iter()
+        let next_falling = filling
+            .into_iter()
             .flat_map(|p| world.fill_bucket(p))
             .collect();
         filling = next_filling;
@@ -211,7 +226,9 @@ fn run_simulation(world: &mut World) {
 pub fn part1(input: String) -> String {
     let mut world = parse_lines(&input);
     run_simulation(&mut world);
-    world.water.iter()
+    world
+        .water
+        .iter()
         .filter(|p| p.y <= world.bottom && p.y >= world.top)
         .count()
         .to_string()
@@ -220,7 +237,9 @@ pub fn part1(input: String) -> String {
 pub fn part2(input: String) -> String {
     let mut world = parse_lines(&input);
     run_simulation(&mut world);
-    world.water.iter()
+    world
+        .water
+        .iter()
         .filter(|p| p.y <= world.bottom && p.y >= world.top)
         .filter(|&p| {
             // Don't take ones which drip

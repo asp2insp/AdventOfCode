@@ -1,8 +1,8 @@
+use chrono::{NaiveDateTime, Timelike};
 use itertools::*;
-use chrono::{NaiveDateTime,Timelike};
-use std::collections::HashMap;
 use rayon::prelude::*;
 use regex::*;
+use std::collections::HashMap;
 use std::mem;
 
 fn is_safe(a: char, b: char) -> bool {
@@ -34,9 +34,14 @@ pub fn part1(input: String) -> String {
 pub fn part2(input: String) -> String {
     let mut chain = input.chars().collect::<Vec<_>>();
     let abc = (65u8..90).map(|ci| ci as char).collect::<Vec<char>>();
-    let m = abc.into_par_iter()
+    let m = abc
+        .into_par_iter()
         .map(|c| {
-            let chain2 = chain.iter().filter(|i| **i != c && **i != c.to_ascii_lowercase()).cloned().collect();
+            let chain2 = chain
+                .iter()
+                .filter(|i| **i != c && **i != c.to_ascii_lowercase())
+                .cloned()
+                .collect();
             len_after_reacting(chain2)
         })
         .min()

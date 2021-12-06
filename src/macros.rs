@@ -1,3 +1,4 @@
+
 #[macro_export]
 macro_rules! veci {
     ( $( $e:expr, if $b:expr),*$(,)* ) => ({
@@ -18,5 +19,25 @@ macro_rules! parse {
     };
     ( $e:expr ) => {
         ($e).parse::<>().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! ppush {
+    ($v:expr, $arg:expr) => {
+        ($v).last_mut().unwrap().push($arg)
+    };
+}
+
+#[macro_export]
+macro_rules! makeset {
+    ( $( $e:expr),*$(,)* ) => { 
+        {
+            let mut set = std::collections::HashSet::new();
+            $(
+                set.insert($e);
+            )*
+            set
+        }
     };
 }

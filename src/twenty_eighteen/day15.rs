@@ -155,9 +155,10 @@ impl Map {
             .get(&p)
             .into_iter()
             .flat_map(|u| {
-                self.units.iter()
+                self.units
+                    .iter()
                     .filter(|(_, u2)| u.is_foe(u2))
-                    .flat_map(|(l,_)| l.adjacents())
+                    .flat_map(|(l, _)| l.adjacents())
                     .sorted()
             })
             .filter(|p2| self.grid[p2.y][p2.x] && !self.units.contains_key(&p2))
@@ -190,7 +191,8 @@ impl Map {
         if let Some(att) = self.find_attack_for_unit_at(p) {
             self.attack(p, att);
         } else if let Some(tg) = self.find_target_for_unit_at(p) {
-            let maybe_mv =  p.adjacents()
+            let maybe_mv = p
+                .adjacents()
                 .filter(|p2| self.grid[p2.y][p2.x] && !self.units.contains_key(&p2))
                 .min_by(|ma, mb| self.dist(*ma, tg).cmp(&self.dist(*mb, tg)).then(ma.cmp(mb)));
             if let Some(mv) = maybe_mv {
@@ -203,13 +205,13 @@ impl Map {
     }
 
     fn if_done_get_ending_hp(&self) -> Option<isize> {
-        let (gob_hp, elf_hp) = self.units.values()
-            .fold((0, 0), |mut acc, u|
-                if u.team == Elf {
-                    (acc.0 + u.hp, acc.1)
-                } else {
-                    (acc.0, acc.1 + u.hp)
-                });
+        let (gob_hp, elf_hp) = self.units.values().fold((0, 0), |mut acc, u| {
+            if u.team == Elf {
+                (acc.0 + u.hp, acc.1)
+            } else {
+                (acc.0, acc.1 + u.hp)
+            }
+        });
         match (gob_hp, elf_hp) {
             (0, n) => Some(n),
             (n, 0) => Some(n),
@@ -222,7 +224,7 @@ impl Map {
         for ul in unit_locs {
             self.step_unit_at(ul);
             if let Some(i) = self.if_done_get_ending_hp() {
-                return Some(i)
+                return Some(i);
             }
         }
         None
@@ -296,7 +298,7 @@ fn run_to_completion(map: &mut Map) -> (isize, isize) {
     for i in 0.. {
         // println!("{}", map.print());
         if let Some(j) = map.step_units() {
-            return (i, j)
+            return (i, j);
         }
     }
     unreachable!()
@@ -314,7 +316,7 @@ pub fn part2(input: String) -> String {
         map.elf_ap = ap;
         let (round, hp) = run_to_completion(&mut map);
         if map.dead_elf_count == 0 {
-            return format!("{} * {} = {}", round, hp, round * hp)
+            return format!("{} * {} = {}", round, hp, round * hp);
         }
     }
     unreachable!()
@@ -357,10 +359,7 @@ mod test {
 
     #[test]
     pub fn target_order() {
-        let s = vec![
-            "E.G.E", 
-            "E...G",
-        ].into_iter().join("\n");
+        let s = vec!["E.G.E", "E...G"].into_iter().join("\n");
         let map = parse_grid(&s);
         assert_eq!(
             Some(Point { x: 1, y: 0 }),
@@ -379,7 +378,7 @@ mod test {
             map.find_target_for_unit_at(Point { x: 0, y: 1 })
         );
     }
- 
+
     #[test]
     pub fn step_simple() {
         let s = "#E..GE#";
@@ -398,24 +397,18 @@ mod test {
 
     #[test]
     pub fn decisions() {
-         let s = vec![
-            "...G", 
-            "E...",
-        ].into_iter().join("\n");
+        let s = vec!["...G", "E..."].into_iter().join("\n");
         let mut map = parse_grid(&s);
         map.step_units();
         assert_eq!(
-            vec![
-                "E.G.  E(200) G(200)",
-                "....  ",
-                "####  ",
-                "####  ",
-            ].into_iter().join("\n"),
+            vec!["E.G.  E(200) G(200)", "....  ", "####  ", "####  ",]
+                .into_iter()
+                .join("\n"),
             map.print(),
         );
     }
 
-const E1: &str = r#"
+    const E1: &str = r#"
 #######
 #E.G#.#
 #.#G..#
@@ -425,7 +418,7 @@ const E1: &str = r#"
 #######
 "#;
 
-const E2: &str = r#"
+    const E2: &str = r#"
 #######
 #G..#E#
 #E#E.E#
@@ -435,7 +428,7 @@ const E2: &str = r#"
 #######
 "#;
 
-const E3: &str = r#"
+    const E3: &str = r#"
 #########
 #G......#
 #.E.#...#

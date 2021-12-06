@@ -1,12 +1,12 @@
+use chrono::{NaiveDateTime, Timelike};
+use image::{ImageBuffer, Luma};
 use itertools::*;
-use chrono::{NaiveDateTime,Timelike};
-use std::collections::HashMap;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
 use regex::*;
+use std::collections::HashMap;
 use std::mem;
-use image::{Luma, ImageBuffer};
 use std::path::Path;
-use lazy_static::lazy_static;
 
 const SIZE: u32 = 200;
 
@@ -24,7 +24,7 @@ struct Point {
 
 fn parse_lines(s: &str) -> Vec<Point> {
     s.lines()
-        .map(|l|{
+        .map(|l| {
             let cap = RE.captures(l).unwrap();
             Point {
                 x: cap["x"].parse().unwrap(),
@@ -36,7 +36,7 @@ fn parse_lines(s: &str) -> Vec<Point> {
         .collect()
 }
 
-fn step(points: &mut[Point]) {
+fn step(points: &mut [Point]) {
     for p in points {
         p.x += p.vx;
         p.y += p.vy;
@@ -46,7 +46,7 @@ fn step(points: &mut[Point]) {
 const SCALE: u32 = 1;
 
 fn coord_to_px(coord: isize) -> u32 {
-    ((coord + (SIZE as isize * SCALE as isize/2)) as u32) / SCALE - 200
+    ((coord + (SIZE as isize * SCALE as isize / 2)) as u32) / SCALE - 200
 }
 
 fn make_image(points: &[Point], path: &Path) {

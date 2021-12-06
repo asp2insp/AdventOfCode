@@ -1,19 +1,21 @@
+use chrono::{NaiveDateTime, Timelike};
 use itertools::*;
-use chrono::{NaiveDateTime,Timelike};
-use std::collections::HashMap;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
 use regex::*;
+use std::collections::HashMap;
 use std::mem;
-use lazy_static::lazy_static;
 
 // Step L must be finished before step N can begin.
 lazy_static! {
-    static ref RE: Regex = Regex::new(r"Step (?P<dep>[A-Z]) must be finished before step (?P<item>[A-Z]) can begin.").unwrap();
+    static ref RE: Regex =
+        Regex::new(r"Step (?P<dep>[A-Z]) must be finished before step (?P<item>[A-Z]) can begin.")
+            .unwrap();
 }
 
 fn parse_lines(s: &str) -> HashMap<char, Vec<char>> {
     s.lines()
-        .map(|l|{
+        .map(|l| {
             let cap = RE.captures(l).unwrap();
             (
                 cap["item"].chars().next().unwrap(),
@@ -26,7 +28,6 @@ fn parse_lines(s: &str) -> HashMap<char, Vec<char>> {
             map
         })
 }
-
 
 pub fn part1(input: String) -> String {
     let mut deps = parse_lines(&input);
@@ -62,7 +63,10 @@ impl Worker {
         if self.is_idle() {
             None
         } else if self.time_left < count {
-            panic!("Tried to tick by {}, but only {} remaining", count, self.time_left);
+            panic!(
+                "Tried to tick by {}, but only {} remaining",
+                count, self.time_left
+            );
         } else if self.time_left == count {
             self.time_left = 0;
             let c = self.task;
@@ -95,7 +99,10 @@ fn time_taken(task: char) -> usize {
 
 pub fn part2(input: String) -> String {
     let mut deps = parse_lines(&input);
-    let mut workers = [Worker {task: IDLE, time_left: 0}; 5];
+    let mut workers = [Worker {
+        task: IDLE,
+        time_left: 0,
+    }; 5];
     let mut clock = 0;
     let mut done = Vec::new();
     let target = deps.len();
@@ -114,13 +121,20 @@ pub fn part2(input: String) -> String {
                     w.task = item;
                     w.time_left = time_taken(item);
                     deps.remove(&item);
-                    break
+                    break;
                 }
             }
         }
         // println!("State {}) {:?}", clock, workers);
-        let tb = workers.iter().flat_map(|w| w.remaining().into_iter()).min().unwrap();
-        let finished: Vec<char> = workers.iter_mut().flat_map(|mut w| w.tick_by(tb).into_iter()).collect();
+        let tb = workers
+            .iter()
+            .flat_map(|w| w.remaining().into_iter())
+            .min()
+            .unwrap();
+        let finished: Vec<char> = workers
+            .iter_mut()
+            .flat_map(|mut w| w.tick_by(tb).into_iter())
+            .collect();
         clock += tb;
         // println!("{}) {:?}", clock, finished);
         done.extend(finished);

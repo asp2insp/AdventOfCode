@@ -1,10 +1,10 @@
+use chrono::{NaiveDateTime, Timelike};
 use itertools::*;
-use chrono::{NaiveDateTime,Timelike};
-use std::collections::HashMap;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
 use regex::*;
+use std::collections::HashMap;
 use std::mem;
-use lazy_static::lazy_static;
 
 const SIZE: usize = 300;
 const SERIAL: isize = 1788;
@@ -12,8 +12,9 @@ const SERIAL: isize = 1788;
 lazy_static! {
     static ref GRID: [[isize; SIZE]; SIZE] = {
         let mut grid = [[0isize; SIZE]; SIZE];
-        (0..SIZE).cartesian_product(0..SIZE).for_each(|(x,y)| {
-            grid[x][y] = (0..x).cartesian_product(0..y)
+        (0..SIZE).cartesian_product(0..SIZE).for_each(|(x, y)| {
+            grid[x][y] = (0..x)
+                .cartesian_product(0..y)
                 .map(|(xp, yp)| power_level(xp, yp))
                 .sum();
         });
@@ -46,7 +47,7 @@ fn convo(x: usize, y: usize, s: usize) -> isize {
         return 0;
     }
     let (x, y, offset) = (x as isize, y as isize, s as isize - 1);
-    g(x+offset, y+offset) - g(x+offset,y-1) - g(x-1,y+offset) + g(x-1,y-1)
+    g(x + offset, y + offset) - g(x + offset, y - 1) - g(x - 1, y + offset) + g(x - 1, y - 1)
 }
 
 #[derive(Debug)]
@@ -58,7 +59,8 @@ pub struct Res {
 }
 
 pub fn grid_power(size: usize) -> Res {
-    let m = (1..SIZE).cartesian_product((1..SIZE))
+    let m = (1..SIZE)
+        .cartesian_product((1..SIZE))
         .map(|xy| (convo(xy.0, xy.1, size), xy.0, xy.1))
         .max_by_key(|pxy| pxy.0)
         .unwrap();
