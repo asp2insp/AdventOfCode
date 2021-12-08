@@ -40,3 +40,12 @@ macro_rules! makeset {
         }
     };
 }
+
+#[macro_export]
+macro_rules! gimme_nums {
+    ( $e:expr ) => {
+        ($e).lines().map(|l| {
+            l.split(",").flat_map(|s| s.parse::<isize>()).collect::<Vec<isize>>()
+        }).collect::<Vec<Vec<isize>>>()
+    };
+}
