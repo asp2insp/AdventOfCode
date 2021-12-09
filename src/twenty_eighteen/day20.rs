@@ -50,17 +50,17 @@ fn parse(s: &[char]) -> Seg {
 
 fn fill_out_map(
     map: &mut Grid<()>,
-    points: HashSet<(isize, isize)>,
+    points: HashSet<Point>,
     re: Seg,
-) -> HashSet<(isize, isize)> {
+) -> HashSet<Point> {
     match re {
         Seg::Plain(d) => {
             let mut next = HashSet::new();
-            for (x, y) in points {
-                let door = map.drive(x, y, d).unwrap();
-                let room = map.drive(door.0, door.1, d).unwrap();
-                map.set(door.0, door.1, '+', ());
-                map.set(room.0, room.1, '.', ());
+            for p in points {
+                let door = map.drive(p, d).unwrap();
+                let room = map.drive(door, d).unwrap();
+                map.set(door, '+', ());
+                map.set(room, '.', ());
                 next.insert(room);
             }
             next
@@ -83,16 +83,17 @@ pub fn part1(input: String) -> String {
     let re = parse(&input.chars().collect::<Vec<_>>());
     let mut map: Grid<()> = Grid::default();
     map.wall_char = '#';
-	map.set(0, 0, '.', ());
-    fill_out_map(&mut map, makeset! {(0, 0)}, re);
+    let origin = Point{x: 0, y: 0};
+	map.set(origin, '.', ());
+    fill_out_map(&mut map, makeset! {origin}, re);
     map.dfs_path_bulk(
-        (0, 0),
+        origin,
         map.iter_range(None, None)
-            .filter(|(_, _, c, _)| *c == '.')
-			.map(|(x, y, _, _)| (x, y))
+            .filter(|(_, c, _)| *c == '.')
+			.map(|(p, _, _)| p)
             .collect(),
-        Some(|x1, y1| {
-            map.get(x1, y1)
+        Some(|p| {
+            map.get(p)
                 .map(|(c, _)| if *c == '+' { 1 } else { 0 })
                 .unwrap_or(isize::MAX)
         }),
@@ -108,16 +109,17 @@ pub fn part2(input: String) -> String {
     let re = parse(&input.chars().collect::<Vec<_>>());
     let mut map: Grid<()> = Grid::default();
     map.wall_char = '#';
-    map.set(0, 0, '.', ());
-    fill_out_map(&mut map, makeset! {(0, 0)}, re);
+    let origin = Point{x: 0, y: 0};
+    map.set(origin, '.', ());
+    fill_out_map(&mut map, makeset! {origin}, re);
     map.dfs_path_bulk(
-        (0, 0),
+        origin,
         map.iter_range(None, None)
-            .filter(|(_, _, c, _)| *c == '.')
-			.map(|(x, y, _, _)| (x, y))
+            .filter(|(_, c, _)| *c == '.')
+			.map(|(p, _, _)| p)
             .collect(),
-        Some(|x1, y1| {
-            map.get(x1, y1)
+        Some(|p| {
+            map.get(p)
                 .map(|(c, _)| if *c == '+' { 1 } else { 0 })
                 .unwrap_or(isize::MAX)
         }),

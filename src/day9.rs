@@ -5,8 +5,8 @@ use itertools::*;
 pub fn part1(input: String) -> String {
 	let g = Grid::new(&input, ());
 	g.iter_range(None, None)
-		.filter(|(x, y, c, _)| g.neighbors(*x, *y).all(|(x2, y2)| g.get(x2, y2).unwrap().0 > *c))
-		.map(|(_, _, c, _)| c.to_digit(10).unwrap())
+		.filter(|(p, c, _)| g.neighbors(*p).all(|p| g.get(p).unwrap().0 > *c))
+		.map(|(_, c, _)| c.to_digit(10).unwrap())
 		.map(|d| d+1)
 		.sum::<u32>()
 		.to_string()
@@ -16,11 +16,11 @@ pub fn part1(input: String) -> String {
 pub fn part2(input: String) -> String {
 	let g = Grid::new(&input, ());
 	g.iter_range(None, None)
-		.filter(|(x, y, c, _)| g.neighbors(*x, *y).all(|(x2, y2)| g.get(x2, y2).unwrap().0 > *c))
-		.map(|(x, y, _, _)| (x, y))
-		.map(|(x, y)| g.flood_search_by_pred(x, y, |fx, fy, tx, ty| {
-			let to = g.get(tx, ty).unwrap().0;
-			let from = g.get(fx, fy).unwrap().0;
+		.filter(|(p, c, _)| g.neighbors(*p).all(|p2| g.get(p2).unwrap().0 > *c))
+		.map(|(p, _, _)| (p))
+		.map(|(p)| g.flood_search_by_pred(p, |fp, tp| {
+			let to = g.get(tp).unwrap().0;
+			let from = g.get(fp).unwrap().0;
 			to != '9' && to > from
 		}).len())
 		.sorted()
