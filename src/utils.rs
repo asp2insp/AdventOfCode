@@ -32,6 +32,14 @@ pub trait IterUtils: Iterator {
     }
 }
 
+// pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
+//     use regex::*;
+//         let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+//         s.lines().map(|l| {
+//             re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
+//         }).collect::<Vec<Vec<isize>>>()
+// }
+
 impl<T: ?Sized> IterUtils for T where T: Iterator {}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -350,6 +358,21 @@ impl<T> Grid<T> {
                 stack.push(((nx, ny), cost + w));
             }
         }
+    }
+
+    // Returns flooded area matched by predicate((from), (to))
+    pub fn flood_search_by_pred(&self, x: isize, y: isize, pred: impl Fn(isize, isize, isize, isize) -> bool) -> HashSet<(isize, isize)> {
+        let mut q = vec![(x, y)];
+        let mut res = makeset![(x, y)];
+        while let Some((px, py)) = q.pop() {
+			for n in self.neighbors(px, py) {
+                if !res.contains(&n) && pred(px, py, n.0, n.1) {
+                    q.push(n);
+                    res.insert(n);
+                }
+            }
+		}
+        res
     }
 }
 

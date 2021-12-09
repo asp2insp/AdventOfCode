@@ -54,24 +54,6 @@ macro_rules! dict {
     };
 }
 
-#[macro_export]
-macro_rules! gimme_nums {
-    ( $e:expr ) => {
-        {
-            use regex::*;
-            let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
-            ($e).lines().map(|l| {
-                re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
-            }).collect::<Vec<Vec<isize>>>()
-        }
-    };
-}
-
-#[test]
-fn test_nums() {
-    assert_eq!(vec![vec![1, 2, -3, 4]], gimme_nums!("  1,2  , -3 | 4"));
-}
-
 #[test]
 fn test_dict() {
     use itertools::*;
