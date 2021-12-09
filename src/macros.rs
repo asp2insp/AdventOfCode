@@ -41,11 +41,40 @@ macro_rules! makeset {
     };
 }
 
+macro_rules! dict {
+    ($($i:expr => $e:expr),* $(,)?) => {
+        {
+            use std::collections::HashMap;
+            let mut m = HashMap::new();
+            $(
+                m.insert($i, $e);
+            )*
+            m
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! gimme_nums {
     ( $e:expr ) => {
-        ($e).lines().map(|l| {
-            l.split(",").flat_map(|s| s.parse::<isize>()).collect::<Vec<isize>>()
-        }).collect::<Vec<Vec<isize>>>()
+        {
+            use regex::*;
+            let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+            ($e).lines().map(|l| {
+                re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
+            }).collect::<Vec<Vec<isize>>>()
+        }
     };
+}
+
+#[test]
+fn test_nums() {
+    assert_eq!(vec![vec![1, 2, -3, 4]], gimme_nums!("  1,2  , -3 | 4"));
+}
+
+#[test]
+fn test_dict() {
+    use itertools::*;
+    use std::collections::HashMap;
+    assert_eq!((0..3).zip(['a', 'b', 'c']).collect::<HashMap<usize, char>>(), dict!{0 => 'a', 1 => 'b', 2 => 'c'});
 }
