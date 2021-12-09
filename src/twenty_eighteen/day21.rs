@@ -119,22 +119,44 @@ impl<'a> From<&'a str> for Opcode {
 }
 
 pub fn part1(input: String) -> String {
-	let (iptr_i, prog) = parse_program(&input);
-	for x in 0.. {
-		let mut computer = Computer { reg: [0; 6] };
-		let mut iptr = 0;
-		while iptr < prog.len() {
-			computer.reg[iptr_i] = iptr;
-			let instr = &prog[iptr];
-			computer.run(instr);
-			iptr = computer.reg[iptr_i] + 1;
-		}
-	}
-    
-    computer.reg[0].to_string()
+    let (iptr_i, prog) = parse_program(&input);
+    let mut computer = Computer { reg: [0; 6] };
+    let mut iptr = 0;
+    while iptr < prog.len() {
+        computer.reg[iptr_i] = iptr;
+        let instr = &prog[iptr];
+        if let Eqrr = instr.op {
+            if instr.b == 0 {
+                return computer.reg[4].to_string()
+            }
+        }
+        computer.run(instr);
+        iptr = computer.reg[iptr_i] + 1;
+    }
+    unreachable!()
 }
 
-
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+    let (iptr_i, prog) = parse_program(&input);
+    let mut computer = Computer { reg: [0; 6] };
+    let mut iptr = 0;
+    let mut seen = makeset![];
+    let mut last = 0;
+    while iptr < prog.len() {
+        computer.reg[iptr_i] = iptr;
+        let instr = &prog[iptr];
+        if let Eqrr = instr.op {
+            if instr.b == 0 {
+                let result = computer.reg[4];
+                if seen.contains(&result) {
+                    return last.to_string()
+                }
+                seen.insert(result);
+                last = result;
+            }
+        }
+        computer.run(instr);
+        iptr = computer.reg[iptr_i] + 1;
+    }
+    unreachable!()
 }
