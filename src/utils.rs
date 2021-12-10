@@ -506,15 +506,15 @@ mod test {
         let (path_cost, path) = g.dfs_path((1, 1).into(), (3, 7).into(), Some(&cost_fn));
         assert_eq!(
             vec![
-                (3, 7).into(),
-                (3, 6).into(),
-                (3, 5).into(),
-                (3, 4).into(),
-                (3, 3).into(),
-                (3, 2).into(),
-                (3, 1).into(),
-                (2, 1).into(),
-                (1, 1).into()
+                Point::from((3, 7)),
+                Point::from((3, 6)),
+                Point::from((3, 5)),
+                Point::from((3, 4)),
+                Point::from((3, 3)),
+                Point::from((3, 2)),
+                Point::from((3, 1)),
+                Point::from((2, 1)),
+                Point::from((1, 1))
             ],
             path
         );
