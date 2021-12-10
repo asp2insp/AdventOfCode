@@ -12,7 +12,7 @@ mod utils;
 // mod twenty_fifteen;
 // mod twenty_sixteen;
 // mod twenty_seventeen;
-// mod twenty_eighteen;
+mod twenty_eighteen;
 
 fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
@@ -47,10 +47,10 @@ macro_rules! run_day {
             }
 
             
-            // println!("Old: {:?}", twenty_eighteen::day21::part1(get_input("twenty_eighteen/day21")));
-            // println!("Old: {:?}", twenty_eighteen::day21::part2(get_input("twenty_eighteen/day21")));
+            println!("Old: {:?}", twenty_eighteen::day22::part1(get_input("twenty_eighteen/day22")));
+            println!("Old: {:?}", twenty_eighteen::day22::part2(get_input("twenty_eighteen/day22")));
         }
     };
 }
 
-run_day!(day10);
+run_day!(day11);
