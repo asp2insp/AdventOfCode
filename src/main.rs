@@ -47,8 +47,8 @@ macro_rules! run_day {
             }
 
             
-            println!("Old: {:?}", twenty_eighteen::day22::part1(get_input("twenty_eighteen/day22")));
-            println!("Old: {:?}", twenty_eighteen::day22::part2(get_input("twenty_eighteen/day22")));
+            println!("Old: {:?}", twenty_eighteen::day23::part1(get_input("twenty_eighteen/day23")));
+            println!("Old: {:?}", twenty_eighteen::day23::part2(get_input("twenty_eighteen/day23")));
         }
     };
 }
