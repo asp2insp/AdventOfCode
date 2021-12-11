@@ -32,13 +32,22 @@ pub trait IterUtils: Iterator {
     }
 }
 
-// pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
-//     use regex::*;
-//         let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
-//         s.lines().map(|l| {
-//             re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
-//         }).collect::<Vec<Vec<isize>>>()
-// }
+pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
+    use regex::*;
+        let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+        return s.lines().map(|l| {
+            re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
+        }).collect::<Vec<Vec<isize>>>()
+}
+
+fn free_neighbors_bounded(p: Point, bounds: Option<(isize, isize, isize, isize)>) -> Vec<Point> {
+    veci![
+        Point {x: p.x - 1, y: p.y}, if bounds.map(|b| p.x > b.0).unwrap_or(true),
+        Point {x: p.x + 1, y: p.y}, if bounds.map(|b| p.x < b.2).unwrap_or(true),
+        Point {x: p.x , y: p.y - 1}, if bounds.map(|b| p.y > b.1).unwrap_or(true),
+        Point {x: p.x, y: p.y + 1}, if bounds.map(|b| p.y < b.3).unwrap_or(true),
+    ]
+}
 
 impl<T: ?Sized> IterUtils for T where T: Iterator {}
 
@@ -146,7 +155,7 @@ impl<T> Grid<T> {
     pub fn new_with(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
         let mut m = HashMap::new();
         for (li, l) in s.lines().rev().enumerate() {
-            for (ci, c) in l.chars().enumerate() {
+            for (ci, c) in l.trim().chars().enumerate() {
                 m.insert(Point::from((ci, li)), (c, f(c)));
             }
         }
@@ -250,6 +259,15 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn get_mut(&mut self, p: Point) -> Option<&mut (char, T)> {
+        if !self.in_bounds(p) {
+            None
+        }
+        else {
+            self.map.get_mut(&p)
+        }
+    }
+
     pub fn set(&mut self, p: Point, c: char, t: T) {
         if self.in_bounds(p) {
             self.map.insert(p, (c, t));
@@ -297,6 +315,24 @@ impl<T> Grid<T> {
             .filter_map(|xy| self.get(Point::from(xy)).map(|ct| (Point::from(xy), ct.0, &ct.1)))
     }
 
+    pub fn for_each_mut(
+        &mut self,
+        xrange: Option<RangeInclusive<isize>>,
+        yrange: Option<RangeInclusive<isize>>,
+        f: impl Fn(&mut (char, T)) -> (),
+    ) {
+        let (l, bt, r, tp) = self.get_bounds();
+        let xrange = xrange.unwrap_or(l..=r);
+        let yrange = yrange.unwrap_or(bt..=tp);
+        xrange
+            .cartesian_product(yrange)
+            .for_each(|xy| {
+                if let Some(ct) = self.map.get_mut(&Point::from(xy)) {
+                    f(ct);
+                }
+            });
+    }
+
     pub fn is_wall(&self, p: Point) -> bool {
         self.has_walls()
             && self
@@ -337,6 +373,22 @@ impl<T> Grid<T> {
 
     fn neighbors_default(&self, p: Point) -> Vec<(Point, isize)> {
         self.neighbors(p).map(|(p2)| (p2, 1)).collect()
+    }
+
+    pub fn neighbors_with_diagonals(&self, p: Point) -> impl Iterator<Item = Point> {
+        use Direction::*;
+        vec![
+            self.drive(p, N),
+            self.drive(p, S),
+            self.drive(p, E),
+            self.drive(p, W),
+            self.drive(p, N).and_then(|p2| self.drive(p2, E)),
+            self.drive(p, N).and_then(|p2| self.drive(p2, W)),
+            self.drive(p, S).and_then(|p2| self.drive(p2, E)),
+            self.drive(p, S).and_then(|p2| self.drive(p2, W)),
+        ]
+        .into_iter()
+        .filter_map(|n| n)
     }
 
     // Weights on nodes, looks for specific targets
@@ -423,13 +475,12 @@ impl<T> Grid<T> {
     // Returns map of point => (min_cost_sum, parent)
     pub fn bfs_generic(
         &self,
-        start: Point,
+        starts: HashSet<Point>,
         expand: Option<impl Fn(Point) -> Vec<(Point, isize)>>,
         is_done: Option<impl Fn(&HashMap<Point, (isize, Point)>) -> bool>,
     ) -> HashMap<Point, (isize, Point)> {
-        let mut q = VecDeque::new();
+        let mut q = starts.into_iter().collect::<VecDeque<_>>();
         let mut res: HashMap<Point, (isize, Point)> = HashMap::new();
-        q.push_back(start);
         while let Some(p) = q.pop_front() {
             let curr_min_cost = res.get(&p).map(|tup| tup.0).unwrap_or(isize::MAX);
             for n in expand.as_ref().map(|f| f(p)).unwrap_or(self.neighbors_default(p)) {
