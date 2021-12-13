@@ -65,7 +65,7 @@ fn select_targets(from: &[Group], to: &[Group]) -> HashMap<usize, usize> {
 			seen.insert(i);
 		}
 	}
-	for attack in (0..from.len()).filter(|i| to[*i].units > 0).sorted_by(|&a, &b| {
+	for attack in (0..from.len()).filter(|i| from[*i].units > 0).sorted_by(|&a, &b| {
 		from[a].effective_power().cmp(&from[b].effective_power())
 			.then(from[a].initiative.cmp(&from[b].initiative))
 			.reverse()
@@ -73,6 +73,9 @@ fn select_targets(from: &[Group], to: &[Group]) -> HashMap<usize, usize> {
 		if let Some(defend) = (0..to.len()).filter(|i| !seen.contains(i)).max_by(|&a, &b| {
 			from[attack].damage_to(&to[a]).cmp(&from[attack].damage_to(&to[b])).then(to[a].effective_power().cmp(&to[b].effective_power()))
 		}) {
+			if from[attack].damage_to(&to[defend]) == 0 {
+				continue;
+			}
 			seen.insert(defend);
 			map.insert(attack, defend);
 		}
@@ -86,7 +89,7 @@ pub fn part1(input: String) -> String {
 	let mut infect = parse_army(armies_iter.next().unwrap());
 	let army_count = immune.len();
 	let mut armies = vec![immune, infect];
-	println!("{:?}", armies);
+	// println!("{:?}", armies);
 
 	while armies[0].iter().any(|g| g.units > 0) && armies[1].iter().any(|g| g.units > 0) {
 		// Target Selection
@@ -105,13 +108,13 @@ pub fn part1(input: String) -> String {
 			let dfn = &armies[(a+1)%2][target];
 			let damage = att.damage_to(&dfn);
 
-			println!("{}.{}({}) hits {}.{}({}) for {} ({} units)", a, i, att.units, (a+1)%2, target, dfn.units, damage, damage / dfn.hp);
+			// println!("{}.{}({}) hits {}.{}({}) for {} ({} units)", a, i, att.units, (a+1)%2, target, dfn.units, damage, damage / dfn.hp);
 			
 			let m = &mut armies[(a+1)%2][target];
 			m.units = m.units.saturating_sub(damage / m.hp);
 		}
-
-		println!("> {:?}\n  {:?}", armies[0].iter().map(|g| g.units).collect_vec(), armies[1].iter().map(|g| g.units).collect_vec());
+		println!("{:?} {:?}", armies[0].iter().map(|g| g.units).sum::<usize>(), armies[1].iter().map(|g| g.units).sum::<usize>());
+		// println!("> {:?}\n  {:?}", armies[0].iter().map(|g| g.units).collect_vec(), armies[1].iter().map(|g| g.units).collect_vec());
 	}
 
 	format!("{:?}", armies.iter().map(|a| a.iter().map(|g| g.units).sum::<usize>()).collect_vec())
