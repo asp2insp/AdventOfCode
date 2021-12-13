@@ -99,7 +99,7 @@ pub fn part2(input: String) -> String {
             q.push_back(pnew);
         }
     }
-    // println!("{:#?}", paths);
+    // println!("{:#?}", paths.iter().map(|p| p.len()).max().unwrap());
     paths.len().to_string()
 }
 
