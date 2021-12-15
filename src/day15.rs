@@ -9,7 +9,7 @@ pub fn part1(input: String) -> String {
         "{:?}",
         g.bfs_generic(
             makeset!(Point::new(l, t)),
-            Some(|p| g
+            Some(&|p| g
                 .neighbors(p)
                 .map(|n| {
                     (n, g.get(n).unwrap().0.to_digit(10).unwrap() as isize)
@@ -63,13 +63,13 @@ pub fn part2(input: String) -> String {
         "{:?}",
         g.bfs_generic(
             makeset!(Point::new(l, t)),
-            Some(|p| g
+            Some(&|p| g
                 .neighbors(p)
                 .map(|n| {
                     (n, g.get(n).unwrap().0.to_digit(10).unwrap() as isize)
                 })
 				.collect_vec()),
-            None,
+            None
         )[&Point::new(r,b)].0
     )
 }

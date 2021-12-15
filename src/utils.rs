@@ -528,7 +528,7 @@ impl<T> Grid<T> {
     pub fn bfs_generic(
         &self,
         starts: HashSet<Point>,
-        expand: Option<impl Fn(Point) -> Vec<(Point, isize)>>,
+        expand: Option<& dyn Fn(Point) -> Vec<(Point, isize)>>,
         is_done: Option<& dyn Fn(&HashMap<Point, (isize, Point)>) -> bool>,
     ) -> HashMap<Point, (isize, Point)> {
         let mut res: HashMap<Point, (isize, Point)> = starts.iter().map(|s| (*s, (0, *s))).collect();
