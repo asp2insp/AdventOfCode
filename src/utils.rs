@@ -32,6 +32,13 @@ pub trait IterUtils: Iterator {
     }
 }
 
+pub fn add_counting_sets<T: Hash + Eq>(a: HashMap<T, usize>, mut b: HashMap<T, usize>) -> HashMap<T, usize> {
+    for (k, v) in a.into_iter() {
+        *b.entry(k).or_insert(0) += v;
+    }
+    b
+}
+
 pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
     use regex::*;
         let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
@@ -115,6 +122,12 @@ impl From<(i32, i32)> for Point {
             x: tup.0 as isize,
             y: tup.1 as isize,
         }
+    }
+}
+
+impl Point {
+    pub fn new(x: isize, y: isize) -> Self {
+        Point {x, y}
     }
 }
 
@@ -471,7 +484,7 @@ impl<T> Grid<T> {
         res
     }
 
-    // Expand needs to return an list of (x, y, edge_cost)
+    // Expand needs to return an list of (point, edge_cost)
     // Returns map of point => (min_cost_sum, parent)
     pub fn bfs_generic(
         &self,
