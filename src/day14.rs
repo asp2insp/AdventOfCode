@@ -20,28 +20,16 @@ fn parse(s: &str) -> (&str, HashMap<(char, char), char>) {
     )
 }
 
-fn run_step(s: String, t: &HashMap<(char, char), char>) -> String {
-    s.chars()
-        .tuple_windows::<(_, _)>()
-        .flat_map(|(a, b)| {
-            let c = t[&(a, b)];
-            [a, c].into_iter()
-        })
-        .chain(s.chars().last().into_iter())
-        .join("")
-}
-
 pub fn part1(input: String) -> String {
     let (poly, transitions) = parse(&input);
-    let mut p = poly.to_string();
-    for _ in 0..10 {
-        // println!("{}", p);
-        p = run_step(p, &transitions);
-    }
-    let counts = p.chars().counting_set();
+    let counts = poly
+        .chars()
+        .tuple_windows::<(_, _)>()
+        .map(|tup| run_poly(tup, 10, &transitions, &mut dict![]))
+        .fold(HashMap::new(), |m, n| add_counting_sets(m, n));
     format!(
         "{}",
-        counts.values().max().unwrap() - counts.values().min().unwrap()
+        counts.values().max().unwrap() - counts.values().min().unwrap() + 1
     )
 }
 
@@ -68,7 +56,6 @@ fn run_poly(
 
 pub fn part2(input: String) -> String {
     let (poly, transitions) = parse(&input);
-    println!("{}", transitions.len());
     let counts = poly
         .chars()
         .tuple_windows::<(_, _)>()
@@ -76,7 +63,7 @@ pub fn part2(input: String) -> String {
         .fold(HashMap::new(), |m, n| add_counting_sets(m, n));
     format!(
         "{}",
-        counts.values().max().unwrap() - counts.values().min().unwrap()
+        counts.values().max().unwrap() - counts.values().min().unwrap() + 1
     )
 }
 

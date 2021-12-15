@@ -129,13 +129,20 @@ impl Point {
     pub fn new(x: isize, y: isize) -> Self {
         Point {x, y}
     }
+
+    pub fn offset(&self, offsets: (isize, isize)) -> Self {
+        Point {
+            x: self.x + offsets.0,
+            y: self.y + offsets.1,
+        }
+    }
 }
 
+#[derive(Clone, Eq, PartialEq)]
 pub struct Grid<T> {
     map: HashMap<Point, (char, T)>,
     pub wall_char: char,
     pub floor_char: char,
-    pub default_fn: Option<Box<dyn Fn(Point) -> (char, T)>>,
     pub left_bound: isize,
     pub right_bound: isize,
     pub top_bound: isize,
@@ -148,7 +155,6 @@ impl<T> Default for Grid<T> {
             map: HashMap::new(),
             wall_char: '\0',
             floor_char: '\0',
-            default_fn: None,
             left_bound: 0,
             right_bound: 0,
             top_bound: 0,
@@ -214,6 +220,35 @@ impl<T> Grid<T> {
             ..Default::default()
         }
     }
+    
+    pub fn add_other(&mut self, other: &Grid<T>, d: Direction) where T: Clone {
+        let offsets = match d {
+            Direction::W => (-(other.right_bound+1) + self.left_bound, 0),
+            Direction::N => (0, (self.top_bound + 1) - other.bottom_bound),
+            Direction::E => ((self.right_bound+1) - other.left_bound, 0),
+            Direction::S => (0, -(other.top_bound+1) + self.bottom_bound),
+        };
+        self.left_bound = 0;
+        self.right_bound = 0;
+        self.top_bound = 0;
+        self.bottom_bound = 0;
+        for (p, c, t) in other.iter_range(None, None) {
+            self.set(p.offset(offsets), c, t.clone());
+        }
+        let bounds = self.calc_bounds();
+        self.left_bound = bounds.0;
+        self.bottom_bound = bounds.1;
+        self.right_bound = bounds.2;
+        self.top_bound = bounds.3;
+    }
+
+    pub fn width(&self) -> isize {
+        1 + self.right_bound - self.left_bound
+    }
+
+    pub fn height(&self) -> isize {
+        1 + self.top_bound - self.bottom_bound
+    }
 
     pub fn has_walls(&self) -> bool {
         self.wall_char != '\0'
@@ -245,19 +280,23 @@ impl<T> Grid<T> {
                 self.top_bound,
             )
         } else {
-            let mut left = isize::MAX;
-            let mut bottom = isize::MAX;
-            let mut right = isize::MIN;
-            let mut top = isize::MIN;
-
-            for Point{x, y} in self.map.keys() {
-                left = min(left, *x);
-                right = max(right, *x);
-                bottom = min(bottom, *y);
-                top = max(top, *y);
-            }
-            (left, bottom, right, top)
+            self.calc_bounds()
         }
+    }
+
+    pub fn calc_bounds(&self) -> (isize, isize, isize, isize) {
+        let mut left = isize::MAX;
+        let mut bottom = isize::MAX;
+        let mut right = isize::MIN;
+        let mut top = isize::MIN;
+
+        for Point{x, y} in self.map.keys() {
+            left = min(left, *x);
+            right = max(right, *x);
+            bottom = min(bottom, *y);
+            top = max(top, *y);
+        }
+        (left, bottom, right, top)
     }
 
     pub fn get(&self, p: Point) -> Option<&(char, T)> {
@@ -490,10 +529,10 @@ impl<T> Grid<T> {
         &self,
         starts: HashSet<Point>,
         expand: Option<impl Fn(Point) -> Vec<(Point, isize)>>,
-        is_done: Option<impl Fn(&HashMap<Point, (isize, Point)>) -> bool>,
+        is_done: Option<& dyn Fn(&HashMap<Point, (isize, Point)>) -> bool>,
     ) -> HashMap<Point, (isize, Point)> {
+        let mut res: HashMap<Point, (isize, Point)> = starts.iter().map(|s| (*s, (0, *s))).collect();
         let mut q = starts.into_iter().collect::<VecDeque<_>>();
-        let mut res: HashMap<Point, (isize, Point)> = HashMap::new();
         while let Some(p) = q.pop_front() {
             let curr_min_cost = res.get(&p).map(|tup| tup.0).unwrap_or(isize::MAX);
             for n in expand.as_ref().map(|f| f(p)).unwrap_or(self.neighbors_default(p)) {
@@ -584,5 +623,23 @@ mod test {
         );
         assert_eq!(4, path_cost);
         assert_eq!(9, g.dfs_path((1, 11).into(), (9, 9).into(), Some(&cost_fn)).0);
+    }
+
+    #[test]
+    fn test_height_width_add() {
+        let s = "123\n456\n789";
+        let mut g = Grid::new(s, ());
+        println!(">\n{}", g.to_string());
+
+        assert_eq!(3, g.width());
+        assert_eq!(3, g.height());
+        g.add_other(&Grid::new("1101", ()), Direction::S);
+        println!(">\n{}", g.to_string());
+
+        assert_eq!(4, g.height());
+        assert_eq!(4, g.width());
+        g.add_other(&Grid::new("a\nb\nc\nd", ()), Direction::E);
+        println!(">\n{}", g.to_string());
+        // assert_eq!("", g.to_string());
     }
 }

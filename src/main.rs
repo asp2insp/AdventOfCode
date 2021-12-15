@@ -12,7 +12,7 @@ mod utils;
 // mod twenty_fifteen;
 // mod twenty_sixteen;
 // mod twenty_seventeen;
-mod twenty_eighteen;
+// mod twenty_eighteen;
 
 fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
@@ -53,4 +53,4 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day14);
+run_day!(day15);
