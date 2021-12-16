@@ -32,6 +32,25 @@ pub trait IterUtils: Iterator {
     }
 }
 
+pub fn from_bits(bits: &[u8]) -> usize {
+    bits.iter().fold(0, |n, b| (n << 1) + *b as usize)
+}
+
+#[test]
+fn test_bits() {
+    assert_eq!(vec![1, 1, 0, 1], to_bits(13));
+    assert_eq!(13, from_bits(&to_bits(13)));
+}
+
+pub fn to_bits(mut n: usize) -> Vec<u8> {
+    let mut res = Vec::new();
+    while n > 0 {
+        res.insert(0, (n & 1) as u8);
+        n >>= 1;
+    }
+    res
+}
+
 pub fn add_counting_sets<T: Hash + Eq>(a: HashMap<T, usize>, mut b: HashMap<T, usize>) -> HashMap<T, usize> {
     for (k, v) in a.into_iter() {
         *b.entry(k).or_insert(0) += v;
