@@ -38,15 +38,17 @@ pub fn from_bits(bits: &[u8]) -> usize {
 
 #[test]
 fn test_bits() {
-    assert_eq!(vec![1, 1, 0, 1], to_bits(13));
-    assert_eq!(13, from_bits(&to_bits(13)));
+    assert_eq!(vec![1, 1, 0, 1], to_bits(13, None));
+    assert_eq!(13, from_bits(&to_bits(13, None)));
 }
 
-pub fn to_bits(mut n: usize) -> Vec<u8> {
+pub fn to_bits(mut n: usize, len: Option<usize>) -> Vec<u8> {
     let mut res = Vec::new();
-    while n > 0 {
+    let mut len = len.unwrap_or(0);
+    while n > 0 || len > 0 {
         res.insert(0, (n & 1) as u8);
         n >>= 1;
+        len = len.saturating_sub(1);
     }
     res
 }
