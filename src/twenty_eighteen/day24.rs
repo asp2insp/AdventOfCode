@@ -177,22 +177,16 @@ pub fn part2(input: String) -> String {
     let armies = input.split("\n\n")
 		.map(parse_army)
 		.collect_vec();
-	let mut low: usize = 0;
-	let mut high: usize = 1000*1000;
-	while high.saturating_sub(low) > 1 {
-		let next_mid = low +  (high - low) / 2;
-		let (imm, inf) = run_battle(boost(next_mid, &armies), false);
-		if imm == 0 {
-			low = next_mid;
-		} else if inf == 0 {
-			high = next_mid;
-		} else {
-			low = low.saturating_sub(10);
-			high += 10;
-		}
-		println!("{} - {}", low, high);
-	}
-   format!("{:?}", run_battle(boost(high.max(low), &armies), false))
+    
+
+    for i in 0.. {
+        let (imm, inf) = run_battle(boost(i, &armies), false);
+        // println!("{} {} vs {}", i, imm, inf);
+        if inf == 0 {
+            return imm.to_string()
+        }
+    }
+    unreachable!()
 }
 
 #[test]
