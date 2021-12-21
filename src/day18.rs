@@ -47,8 +47,8 @@ fn maybe_explode(s: &mut Vec<usize>) -> bool {
 			// We're assured explodes are always 2 regulars
 			let li = s[i+1];
 			let ri = s[i+2];
-			walk_add(s, i, li, true);
-			walk_add(s, i, ri, false);
+			walk_add(s, i-1, li, true);
+			walk_add(s, i+1, ri, false);
 			// remove i[ li, ri, ] and replace with 0
 			s.splice(i..i+4, once(0));
 			return true;
