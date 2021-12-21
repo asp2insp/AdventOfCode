@@ -1,9 +1,10 @@
-use crate::intcode::*;
+use crate::twenty_nineteen::intcode::*;
 use defaultmap::DefaultHashMap;
 use itertools::*;
 use std::collections::{HashSet, VecDeque};
 use std::thread;
 use std::io::{self, Write};
+use crate::utils::Grid;
 
 fn neighbors(x: isize, y: isize) -> impl Iterator<Item = (isize, isize)> {
 	vec![(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)].into_iter()
