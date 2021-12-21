@@ -32,6 +32,10 @@ pub trait IterUtils: Iterator {
     }
 }
 
+pub fn div_up(a: usize, b: usize) -> usize {
+    (a + (b-1))/b
+}
+
 pub fn from_bits(bits: &[u8]) -> usize {
     bits.iter().fold(0, |n, b| (n << 1) + *b as usize)
 }
