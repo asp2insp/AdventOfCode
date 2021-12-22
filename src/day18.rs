@@ -9,6 +9,14 @@ use crate::utils::div_up;
 use std::iter::once;
 
 
+fn to_snail_str(v: &[usize]) -> String {
+	v.iter().map(|u| match u {
+		&R => "]".to_string(),
+		&L => "[".to_string(),
+		a => a.to_string(),
+	})
+	.join(" ")
+}
 
 fn p(s: &str) -> Vec<usize> {
 	s.chars().filter_map(|c| match c {
@@ -36,6 +44,8 @@ fn walk_add(s: &mut Vec<usize>, mut i: usize, n: usize, is_left: bool) {
 
 fn maybe_explode(s: &mut Vec<usize>) -> bool {
 	let mut depth = 0;
+	#[cfg(test)]
+	println!("{}", to_snail_str(&s));
 	for i in 0..s.len() {
 		match s[i] {
 			R => depth -= 1,
@@ -47,10 +57,14 @@ fn maybe_explode(s: &mut Vec<usize>) -> bool {
 			// We're assured explodes are always 2 regulars
 			let li = s[i+1];
 			let ri = s[i+2];
+			#[cfg(test)]
+			println!("Exploding {} and {}", li, ri);
 			walk_add(s, i-1, li, true);
-			walk_add(s, i+1, ri, false);
+			walk_add(s, i+3, ri, false);
 			// remove i[ li, ri, ] and replace with 0
 			s.splice(i..i+4, once(0));
+			#[cfg(test)]
+			println!("{}", to_snail_str(&s));
 			return true;
 		}
 	}
@@ -125,5 +139,5 @@ fn test_mag() {
 #[test]
 fn test_reduction() {
 	let a = p("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]");
-	assert_eq!(p("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"), reduce(a));
+	assert_eq!("[ [ [ [ 0 7 ] 4 ] [ [ 7 8 ] [ 6 0 ] ] ] [ 8 1 ] ]", to_snail_str(&reduce(a)));
 }
