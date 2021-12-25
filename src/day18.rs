@@ -118,7 +118,16 @@ pub fn part1(input: String) -> String {
 
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+	let items = input.lines()
+		.map(p)
+		.collect_vec();
+	items.iter().cartesian_product(items.iter())
+	.map(|(a, b)| {
+		mag(reduce(add(a.clone(), b.clone())))
+	})
+	.max()
+	.unwrap()
+	.to_string()
 }
 
 #[test]
