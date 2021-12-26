@@ -40,6 +40,37 @@ pub fn from_bits(bits: &[u8]) -> usize {
     bits.iter().fold(0, |n, b| (n << 1) + *b as usize)
 }
 
+
+pub struct P3 {
+    pub x: isize,
+    pub y: isize,
+    pub z: isize,
+}
+
+impl P3 {
+    pub fn new(x: isize, y: isize, z: isize) -> P3 {
+        P3 {x, y, z}
+    }
+
+    pub fn from(xyz: &(isize, isize, isize)) -> P3 {
+        P3::new(xyz.0, xyz.1, xyz.2)
+    }
+
+    pub fn dist(&self, other: &P3) -> isize {
+        (self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs()
+    }
+
+    
+}
+
+pub fn toggle<T: Eq>(curr: T, a: T, b: T) -> T {
+    if curr == a {
+        b
+    } else {
+        a
+    }
+}
+
 #[test]
 fn test_bits() {
     assert_eq!(vec![1, 1, 0, 1], to_bits(13, None));
@@ -336,6 +367,10 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn read(&self, x: isize, y: isize) -> char {
+        self.map.get(&Point::from((x, y))).unwrap().0
+    }
+
     pub fn get_mut(&mut self, p: Point) -> Option<&mut (char, T)> {
         if !self.in_bounds(p) {
             None
@@ -435,6 +470,29 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn drive2(&self, p: Point, d: Direction, d2: Direction) -> Option<Point> {
+        use Direction::*;
+
+        let mut pnew = p;
+        match d {
+            N => pnew.y += 1,
+            S => pnew.y -= 1,
+            E => pnew.x += 1,
+            W => pnew.x -= 1,
+        };
+        match d2 {
+            N => pnew.y += 1,
+            S => pnew.y -= 1,
+            E => pnew.x += 1,
+            W => pnew.x -= 1,
+        };
+        if self.in_bounds(pnew) && !self.is_wall(pnew) {
+            Some(pnew)
+        } else {
+            None
+        }
+    }
+
     pub fn neighbors(&self, p: Point) -> impl Iterator<Item = Point> {
         use Direction::*;
 
@@ -459,13 +517,32 @@ impl<T> Grid<T> {
             self.drive(p, S),
             self.drive(p, E),
             self.drive(p, W),
-            self.drive(p, N).and_then(|p2| self.drive(p2, E)),
-            self.drive(p, N).and_then(|p2| self.drive(p2, W)),
-            self.drive(p, S).and_then(|p2| self.drive(p2, E)),
-            self.drive(p, S).and_then(|p2| self.drive(p2, W)),
+            self.drive2(p, N, E),
+            self.drive2(p, N, W),
+            self.drive2(p, S, E),
+            self.drive2(p, S, W),
         ]
         .into_iter()
         .filter_map(|n| n)
+    }
+
+    pub fn three_by_three(&self, p: Point, default: char) -> impl Iterator<Item = char> {
+        use Direction::*;
+        vec![
+            self.drive2(p, N, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive(p, N).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive2(p, N, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            
+            self.drive(p, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.get(p).map(|tup| tup.0),
+            self.drive(p, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+
+            self.drive2(p, S, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive(p, S).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive2(p, S, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+        ]
+        .into_iter()
+        .map(move |o| o.unwrap_or(default))
     }
 
     // Weights on nodes, looks for specific targets
