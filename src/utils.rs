@@ -2,29 +2,30 @@ use itertools::*;
 use std::any::TypeId;
 use std::cell::Cell;
 use std::cmp::{max, min};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
+use fnv::{FnvHashMap};
 use std::fmt;
 use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 pub trait IterUtils: Iterator {
-    fn counting_set(self) -> HashMap<Self::Item, usize>
+    fn counting_set(self) -> FnvHashMap<Self::Item, usize>
     where
         Self: Sized,
         Self::Item: Clone + Eq + Hash,
     {
-        self.fold(HashMap::new(), |mut map, it| {
+        self.fold(FnvHashMap::default(), |mut map, it| {
             *map.entry(it).or_insert(0) += 1;
             map
         })
     }
 
-    fn counting_set_by<T: Hash + Eq, F: Fn(Self::Item) -> T>(self, f: F) -> HashMap<T, usize>
+    fn counting_set_by<T: Hash + Eq, F: Fn(Self::Item) -> T>(self, f: F) -> FnvHashMap<T, usize>
     where
         Self: Sized,
     {
-        self.fold(HashMap::new(), |mut map, it| {
+        self.fold(FnvHashMap::default(), |mut map, it| {
             let key = f(it);
             *map.entry(key).or_insert(0) += 1;
             map
@@ -88,7 +89,7 @@ pub fn to_bits(mut n: usize, len: Option<usize>) -> Vec<u8> {
     res
 }
 
-pub fn add_counting_sets<T: Hash + Eq>(a: HashMap<T, usize>, mut b: HashMap<T, usize>) -> HashMap<T, usize> {
+pub fn add_counting_sets<T: Hash + Eq>(a: FnvHashMap<T, usize>, mut b: FnvHashMap<T, usize>) -> FnvHashMap<T, usize> {
     for (k, v) in a.into_iter() {
         *b.entry(k).or_insert(0) += v;
     }
@@ -196,7 +197,7 @@ impl Point {
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Grid<T> {
-    map: HashMap<Point, (char, T)>,
+    map: FnvHashMap<Point, (char, T)>,
     pub wall_char: char,
     pub floor_char: char,
     pub left_bound: isize,
@@ -214,7 +215,7 @@ impl <T> std::hash::Hash for Grid<T> {
 impl<T> Default for Grid<T> {
     fn default() -> Grid<T> {
         Grid {
-            map: HashMap::new(),
+            map: FnvHashMap::default(),
             wall_char: '\0',
             floor_char: '\0',
             left_bound: 0,
@@ -234,7 +235,7 @@ impl<T> Grid<T> {
     }
 
     pub fn new_with(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
-        let mut m = HashMap::new();
+        let mut m = FnvHashMap::default();
         for (li, l) in s.lines().rev().enumerate() {
             for (ci, c) in l.trim().chars().enumerate() {
                 m.insert(Point::from((ci, li)), (c, f(c)));
@@ -263,7 +264,7 @@ impl<T> Grid<T> {
     ) -> Grid<T> {
         let mut x = left;
         let mut y = bottom;
-        let mut m = HashMap::new();
+        let mut m = FnvHashMap::default();
         while x <= right {
             while y <= top {
                 let p = Point::from((x, y));
@@ -576,10 +577,10 @@ impl<T> Grid<T> {
         pt1: Point,
         dests: HashSet<Point>,
         weight: Option<impl Fn(Point) -> isize>,
-    ) -> HashMap<Point, (isize, Vec<Point>)> {
+    ) -> FnvHashMap<Point, (isize, Vec<Point>)> {
         // Maps point => cost, parent_point
-        let mut seen: HashMap<Point, (isize, Point)> = HashMap::new();
-        let mut results = HashMap::new();
+        let mut seen: FnvHashMap<Point, (isize, Point)> = FnvHashMap::default();
+        let mut results = FnvHashMap::default();
         let mut stack = Vec::new();
         stack.push((pt1, 0));
         loop {
@@ -646,9 +647,9 @@ impl<T> Grid<T> {
         &self,
         starts: HashSet<Point>,
         expand: Option<& dyn Fn(Point) -> Vec<(Point, isize)>>,
-        is_done: Option<& dyn Fn(&HashMap<Point, (isize, Point)>) -> bool>,
-    ) -> HashMap<Point, (isize, Point)> {
-        let mut res: HashMap<Point, (isize, Point)> = starts.iter().map(|s| (*s, (0, *s))).collect();
+        is_done: Option<& dyn Fn(&FnvHashMap<Point, (isize, Point)>) -> bool>,
+    ) -> FnvHashMap<Point, (isize, Point)> {
+        let mut res: FnvHashMap<Point, (isize, Point)> = starts.iter().map(|s| (*s, (0, *s))).collect();
         let mut q = starts.into_iter().collect::<VecDeque<_>>();
         while let Some(p) = q.pop_front() {
             let curr_min_cost = res.get(&p).map(|tup| tup.0).unwrap_or(isize::MAX);
@@ -674,13 +675,11 @@ impl<T> fmt::Display for Grid<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (l, b, r, t) = self.get_bounds();
         for line_no in (b..=t).rev() {
-            for col_no in l..=r {
-                write!(
-                    f,
-                    "{}",
-                    self.get(Point::from((col_no, line_no))).map(|ct| ct.0).unwrap_or(' ')
-                )?;
-            }
+            write!(f, "{}", (l..=r).map(|col_no| 
+                self.get(Point::from((col_no, line_no)))
+                    .map(|ct| ct.0)
+                    .unwrap_or(' ')
+            ).collect::<String>())?;
             if line_no != b {
                 write!(f, "\n")?;
             }
