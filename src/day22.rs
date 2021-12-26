@@ -3,7 +3,7 @@ use num::iter::RangeInclusive;
 use regex::*;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 struct Instr {
     on_off: bool,
     reg: Region,
@@ -23,7 +23,7 @@ impl Instr {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 struct Region {
     x: std::ops::RangeInclusive<isize>,
     y: std::ops::RangeInclusive<isize>,
@@ -94,23 +94,30 @@ pub fn part1(input: String) -> String {
     map.values().filter(|v| **v).count().to_string()
 }
 
-fn how_many_are_on(instrs: &[Instr], up_to: isize, reg: Region) -> isize {
+fn how_many_are_on(instrs: &[Instr], up_to: isize, reg: Region, hoard: &mut HashMap<(isize, Region), isize>) -> isize {
 	if up_to == -1 || reg.is_empty() {
 		return 0
 	}
+    if hoard.contains_key(&(up_to, reg.clone())) {
+        return hoard[&(up_to, reg.clone())]
+    }
 	let mut total = 0;
-	for i in 0..up_to {
+	for i in 0..=up_to {
 		let region = instrs[i as usize].reg.clone().get_overlap(&reg);
 		if instrs[i as usize].on_off {
+            #[cfg(test)]
 			println!(">> [{}]: +{}", i, region.count());
 			total += region.count();
 		}
-		let below = how_many_are_on(&instrs, i-1 as isize, region);
+		let below = how_many_are_on(&instrs, i-1 as isize, region, hoard);
 		total -= below;
-		println!(">> [{}]: -{}", i, below);
-
-		println!(">> [{}]: {}", i, total);
+        #[cfg(test)]
+        {
+            println!(">> [{}]: -{}", i, below);
+            println!(">> [{}]: {}", i, total);
+        }
 	}
+    hoard.insert((up_to, reg), total);
 	total
 }
 
@@ -125,7 +132,7 @@ pub fn part2(input: String) -> String {
 		y: isize::MIN..=isize::MAX,
 		z: isize::MIN..=isize::MAX,
 	};
-	how_many_are_on(&input, input.len() as isize, all).to_string()
+	how_many_are_on(&input, input.len() as isize -1, all, &mut HashMap::new()).to_string()
 }
 
 //  111111        l1 + l2 - (l1 ^ l1)
