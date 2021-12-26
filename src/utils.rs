@@ -205,6 +205,12 @@ pub struct Grid<T> {
     pub bottom_bound: isize,
 }
 
+impl <T> std::hash::Hash for Grid<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state);
+    }
+}
+
 impl<T> Default for Grid<T> {
     fn default() -> Grid<T> {
         Grid {
@@ -383,6 +389,15 @@ impl<T> Grid<T> {
     pub fn set(&mut self, p: Point, c: char, t: T) {
         if self.in_bounds(p) {
             self.map.insert(p, (c, t));
+        }
+    }
+
+    pub fn swap(&mut self, pfrom: Point, pto: Point) {
+        if self.in_bounds(pfrom) && self.in_bounds(pto) {
+            let from = self.map.remove(&pfrom).unwrap();
+            let to = self.map.remove(&pto).unwrap();
+            self.map.insert(pfrom, to);
+            self.map.insert(pto, from);
         }
     }
 

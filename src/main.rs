@@ -53,4 +53,4 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day21);
+run_day!(day23);
