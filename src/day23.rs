@@ -1,6 +1,7 @@
 use crate::utils::*;
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::{HashMap};
+use std::collections::BinaryHeap;
 use fnv::FnvHashMap;
 
 // #############
@@ -80,12 +81,12 @@ fn candidates(g: &G, hl: isize) -> impl Iterator<Item=(Point, Point)> {
 			// Don't move hall -> hall
 			!(pt.y == hl && pf.y == hl)
 		})
-		.filter(|((pf, cf), (pt, ct))| match (pf.y, pt.y, cf) {
-			// Don't leave the hall unless your home is available
-			(hl, y, 'A') if y < hl => is_avail(g, A, 'A', hl),
-			(hl, y, 'B') if y < hl => is_avail(g, B, 'B', hl),
-			(hl, y, 'C') if y < hl => is_avail(g, C, 'C', hl),
-			(hl, y, 'D') if y < hl => is_avail(g, D, 'D', hl),
+		.filter(|((pf, cf), (pt, ct))| match (pt.y, cf) {
+			// Don't enter your home unless your home is available
+			(y, 'A') if y < hl => is_avail(g, A, 'A', hl),
+			(y, 'B') if y < hl => is_avail(g, B, 'B', hl),
+			(y, 'C') if y < hl => is_avail(g, C, 'C', hl),
+			(y, 'D') if y < hl => is_avail(g, D, 'D', hl),
 			_ => true,
 		})
 		.filter(|((pf, cf), (pt, ct))| match (cf, pt.x) {
@@ -101,30 +102,57 @@ fn candidates(g: &G, hl: isize) -> impl Iterator<Item=(Point, Point)> {
 		.into_iter()
 }
 
-fn min_cost(g: G, hoard: &mut FnvHashMap<G, isize>, depth: usize, hl: isize) -> isize {
-	if hoard.contains_key(&g) {
-		return hoard[&g]
+#[derive(PartialEq, Eq)]
+struct State(isize, G);
+
+impl Ord for State {
+	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+		self.0.cmp(&other.0).reverse()
 	}
-	if is_done(&g, hl) {
-		println!("Done at depth {} with {} unique states", depth, hoard.len());
-		return 0
+}
+
+impl PartialOrd for State {
+	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+		Some(self.cmp(&other))
 	}
-	let mut minval = isize::MAX;
-	for (pf, pt) in candidates(&g, hl) {
-		if let Some(c) = cost(&g, &(pf, pt)) {
-			let mut ng = g.clone();
-			ng.swap(pf, pt);
-			minval = minval.min(c.saturating_add(min_cost(ng, hoard, depth+1, hl)));
+}
+
+fn min_cost(g: G, hl: isize) -> isize {
+	let mut q: BinaryHeap<State> = BinaryHeap::new();
+	let mut hoard: FnvHashMap<G, (isize, G)> = FnvHashMap::with_capacity_and_hasher(250_000, Default::default());
+	q.push(State(0, g));
+	while let Some(State(c, g)) = q.pop() {
+		if is_done(&g, hl) {
+			println!("Done with {} unique states. Cost {}", hoard.len(), c);
+			let mut hist = g;
+			#[cfg(test)]
+			while let Some((hc, hg)) = hoard.get(&hist) {
+				println!("Hist: {}\n{}", hc, hg.to_string());
+				hist = hg.clone();
+			}
+			return c;
+		} else {
+			for (pf, pt) in candidates(&g, hl) {
+				if let Some(nc) = cost(&g, &(pf, pt)) {
+					let mut ng = g.clone();
+					ng.swap(pf, pt);
+					// println!("{}", ng);
+					let new_total_cost = c.saturating_add(nc);
+					if new_total_cost < hoard.get(&ng).map(|t| t.0).unwrap_or(isize::MAX) {
+						hoard.insert(ng.clone(), (new_total_cost, g.clone()));
+						q.push(State(new_total_cost, ng));
+					}
+				}
+			}
 		}
 	}
-	hoard.insert(g, minval);
-	minval
+	unreachable!()
 }
 
 pub fn part1(input: String) -> String {
 	let mut start = Grid::new(&input, ());
 	start.wall_char = '#';
-	min_cost(start, &mut  FnvHashMap::with_capacity_and_hasher(40000, Default::default()), 0, 3).to_string()
+	min_cost(start, 3).to_string()
 }
 
 
@@ -135,7 +163,7 @@ pub fn part2(input: String) -> String {
 	let mut g = Grid::new(&s.into_iter().join("\n"), ());
 	g.wall_char = '#';
 	// println!("{}", g.to_string());
-	min_cost(g, &mut  FnvHashMap::with_capacity_and_hasher(260000, Default::default()), 0, 5).to_string()
+	min_cost(g, 5).to_string()
 }
 
 
@@ -170,7 +198,7 @@ fn test_done() {
 		###A#B#C#D###
 		#############", ());
 	assert_eq!(true, is_done(&g, 3));
-	assert_eq!(0, min_cost(g, &mut FnvHashMap::default(), 0, 3));
+	assert_eq!(0, min_cost(g, 3));
 }
 
 #[test]
@@ -182,19 +210,19 @@ fn test_one() {
 		###A#B#C#D###
 		#############", ());
 	assert_eq!(false, is_done(&g, 3));
-	assert_eq!(3000, min_cost(g, &mut FnvHashMap::default(), 0, 3));
+	assert_eq!(3000, min_cost(g, 3));
 }
 
 #[test]
 fn test_example_two() {
 	let mut g = Grid::new(
 		r"#...........#
-			###B#C#B#D###
-			###D#C#B#A###
-			###D#B#A#C###
-			###A#D#C#A###
-			#############", 
+		###B#C#B#D###
+		###D#C#B#A###
+		###D#B#A#C###
+		###A#D#C#A###
+		#############", 
 		());
 	g.wall_char = '#';
-	assert_eq!(44169, min_cost(g, &mut FnvHashMap::with_capacity_and_hasher(210000, Default::default()), 0, 5));
+	assert_eq!(44169, min_cost(g, 5));
 }
