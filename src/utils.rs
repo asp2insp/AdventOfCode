@@ -72,6 +72,16 @@ pub fn toggle<T: Eq>(curr: T, a: T, b: T) -> T {
     }
 }
 
+pub fn wrap(v: isize, low: isize, high: isize) -> isize {
+    if v > high {
+        low
+    } else if v < low {
+        high
+    } else {
+        v
+    }
+}
+
 #[test]
 fn test_bits() {
     assert_eq!(vec![1, 1, 0, 1], to_bits(13, None));
@@ -283,6 +293,23 @@ impl<T> Grid<T> {
             ..Default::default()
         }
     }
+
+    pub fn new_iter(&self, f: impl Fn(Point, char, &T) -> (char, T)) -> Grid<T> {
+        let mut map = FnvHashMap::default();
+        self.iter_range(None, None)
+            .for_each(|(p, c, t)| {
+                map.insert(p.clone(), f(p, c, t));
+            });
+        Grid {
+            map,
+            left_bound: self.left_bound,
+            right_bound: self.right_bound,
+            top_bound: self.top_bound,
+            bottom_bound: self.top_bound,
+            wall_char: self.wall_char,
+            floor_char: self.floor_char,
+        }
+    }
     
     pub fn add_other(&mut self, other: &Grid<T>, d: Direction) where T: Clone {
         let offsets = match d {
@@ -376,6 +403,10 @@ impl<T> Grid<T> {
 
     pub fn read(&self, x: isize, y: isize) -> char {
         self.map.get(&Point::from((x, y))).unwrap().0
+    }
+
+    pub fn read_pt(&self, p: &Point) -> char {
+        self.map.get(p).unwrap().0
     }
 
     pub fn get_mut(&mut self, p: Point) -> Option<&mut (char, T)> {
@@ -484,6 +515,18 @@ impl<T> Grid<T> {
         } else {
             None
         }
+    }
+
+    pub fn drive_wrap(&self, p: Point, d: Direction) -> Point {
+        use Direction::*;
+        let mut pnew = p;
+        match d {
+            N => pnew.y = wrap(p.y + 1, self.bottom_bound, self.top_bound),
+            S => pnew.y = wrap(p.y - 1, self.bottom_bound, self.top_bound),
+            E => pnew.x = wrap(p.x + 1, self.left_bound, self.right_bound),
+            W => pnew.x = wrap(p.x - 1, self.left_bound, self.right_bound),
+        };
+        pnew
     }
 
     pub fn drive2(&self, p: Point, d: Direction, d2: Direction) -> Option<Point> {
