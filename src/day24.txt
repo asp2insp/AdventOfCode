@@ -1,0 +1,52 @@
+push <inp> + 13                  // 5      +14
+push <inp> + 16                  // 3      >13
+push <inp> + 2                   // 9      |
+push <inp> + 8                   // 9    | |
+push <inp> + 11                  // 9 +  | |
+pop <inp> == carry.last() + -11  // 9 +  | |
+push <inp> + 12                  // 9 |  | |
+pop <inp> == carry.last() + -16  // 5 |  | |
+pop <inp> == carry.last() + -9   // 8    | |
+push <inp> + 15                  // 2 |    |
+pop <inp> == carry.last() + -8   // 9 |    |
+pop <inp> == carry.last() + -8   // 3      |
+pop <inp> == carry.last() + -10  // 9      >2
+pop <inp> == carry.last() + -9   // 9      +1
+
+0: peek carry must == <inp> + 15 otherwise push <inp> + 13
+1: peek carry must == <inp> + 10 otherwise push <inp> + 16
+2: peek carry must == <inp> + 12 otherwise push <inp> + 2
+3: peek carry must == <inp> + 10 otherwise push <inp> + 8
+4: peek carry must == <inp> + 14 otherwise push <inp> + 11
+5: pop carry must == <inp> + -11 otherwise push <inp> + 6
+6: peek carry must == <inp> + 10 otherwise push <inp> + 12
+7: pop carry must == <inp> + -16 otherwise push <inp> + 2
+8: pop carry must == <inp> + -9 otherwise push <inp> + 2
+9: peek carry must == <inp> + 11 otherwise push <inp> + 15
+10: pop carry must == <inp> + -8 otherwise push <inp> + 1
+11: pop carry must == <inp> + -8 otherwise push <inp> + 10
+12: pop carry must == <inp> + -10 otherwise push <inp> + 14
+13: pop carry must == <inp> + -9 otherwise push <inp> + 10
+
+5  11 <=> -11 6    
+7  12 <=> -16 8 
+4  8  <=> -9  9 
+10 15 <=> -8  11
+3  2  <=> -8  12
+2  16 <=> -10 13
+1  13 <=> -9  14  
+
+push <inp> + 13                  // 1      +14
+push <inp> + 16                  // 1      >13
+push <inp> + 2                   // 7      |
+push <inp> + 8                   // 2    | |
+push <inp> + 11                  // 1 +  | |
+pop <inp> == carry.last() + -11  // 1 +  | |
+push <inp> + 12                  // 5 |  | |
+pop <inp> == carry.last() + -16  // 1 |  | |
+pop <inp> == carry.last() + -9   // 1    | |
+push <inp> + 15                  // 1 |    |
+pop <inp> == carry.last() + -8   // 8 |    |
+pop <inp> == carry.last() + -8   // 1      |
+pop <inp> == carry.last() + -10  // 7      >2
+pop <inp> == carry.last() + -9   // 5      +1
