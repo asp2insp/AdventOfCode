@@ -42,6 +42,7 @@ pub fn from_bits(bits: &[u8]) -> usize {
 }
 
 
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct P3 {
     pub x: isize,
     pub y: isize,
@@ -61,7 +62,59 @@ impl P3 {
         (self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs()
     }
 
-    
+    pub fn euclidian_dist_squared(&self, other: &P3) -> isize {
+        (self.x - other.x).abs().pow(2) + (self.y - other.y).abs().pow(2) + (self.z - other.z).abs().pow(2)
+    }
+
+    pub fn rotate_90_around_axis(&self, axis: char) -> P3 {
+        match axis {
+            'x' => P3 {
+                x: self.x,
+                y: self.z * -1,
+                z: self.y,
+            },
+            'y' => P3 {
+                x: self.z,
+                y: self.y,
+                z: self.x * -1,
+            },
+            'z' => P3 {
+                x: self.y * -1,
+                y: self.x,
+                z: self.z,
+            },
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl std::ops::Add for &P3 {
+    type Output = P3;
+    fn add(self, rhs: Self) -> Self::Output {
+        P3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl std::ops::Sub for &P3 {
+    type Output = P3;
+    fn sub(self, rhs: Self) -> Self::Output {
+        P3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl From<&str> for P3 {
+    fn from(s: &str) -> Self {
+        let (x, y, z) = s.split(',').map(|c| parse!(c, isize)).collect_tuple::<_>().unwrap();
+        P3 { x, y, z }
+    }
 }
 
 pub fn toggle<T: Eq>(curr: T, a: T, b: T) -> T {
