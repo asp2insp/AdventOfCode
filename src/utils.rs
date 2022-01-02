@@ -50,6 +50,10 @@ pub struct P3 {
 }
 
 impl P3 {
+    pub fn origin() -> P3 {
+        P3::new(0, 0, 0)
+    }
+
     pub fn new(x: isize, y: isize, z: isize) -> P3 {
         P3 {x, y, z}
     }
@@ -86,6 +90,20 @@ impl P3 {
             _ => unreachable!(),
         }
     }
+
+    pub fn rotate_around_axis(&self, axis: char, times: isize) -> P3 {
+        let mut ret = *self;
+        for _ in 0..times {
+            ret = ret.rotate_90_around_axis(axis);
+        }
+        ret
+    }
+
+    pub fn rotate(&self, rots: P3) -> P3 {
+        let mut ret = self.rotate_around_axis('x', rots.x);
+        ret = ret.rotate_around_axis('y', rots.y);
+        ret.rotate_around_axis('z', rots.z)
+    }
 }
 
 impl std::ops::Add for &P3 {
@@ -99,7 +117,29 @@ impl std::ops::Add for &P3 {
     }
 }
 
+impl std::ops::Add for P3 {
+    type Output = P3;
+    fn add(self, rhs: Self) -> Self::Output {
+        P3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
 impl std::ops::Sub for &P3 {
+    type Output = P3;
+    fn sub(self, rhs: Self) -> Self::Output {
+        P3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl std::ops::Sub for P3 {
     type Output = P3;
     fn sub(self, rhs: Self) -> Self::Output {
         P3 {
