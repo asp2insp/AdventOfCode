@@ -14,7 +14,7 @@ mod utils;
 // mod twenty_seventeen;
 // mod twenty_eighteen;
 
-fn get_input(mod_name: &str) -> String {
+pub fn get_input(mod_name: &str) -> String {
     let path = format!("input/{}", mod_name);
     let mut f = File::open(path).unwrap();
     let mut s = String::new();

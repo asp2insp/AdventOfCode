@@ -67,7 +67,7 @@ impl P3 {
     }
 
     pub fn euclidian_dist_squared(&self, other: &P3) -> isize {
-        (self.x - other.x).abs().pow(2) + (self.y - other.y).abs().pow(2) + (self.z - other.z).abs().pow(2)
+        (self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)
     }
 
     pub fn rotate_90_around_axis(&self, axis: char) -> P3 {
@@ -100,9 +100,26 @@ impl P3 {
     }
 
     pub fn rotate(&self, rots: P3) -> P3 {
-        let mut ret = self.rotate_around_axis('x', rots.x);
-        ret = ret.rotate_around_axis('y', rots.y);
-        ret.rotate_around_axis('z', rots.z)
+        let mut ret = self.rotate_around_axis('x', rots.x.abs());
+        ret = ret.rotate_around_axis('y', rots.y.abs());
+        ret.rotate_around_axis('z', rots.z.abs())
+    }
+
+    pub fn flip(&self, flip: P3) -> P3 {
+        P3 { x: self.x * signum_one(flip.x), y: self.y * signum_one(flip.y), z: self.z * signum_one(flip.z) }
+    }
+
+    pub fn flip_and_rotate(&self, frots: P3) -> P3 {
+        let ret = self.flip(frots);
+        ret.rotate(frots)
+    }
+}
+
+fn signum_one(i: isize) -> isize {
+    if i >= 0 {
+        1
+    } else {
+        -1
     }
 }
 
