@@ -5,9 +5,9 @@ use std::fs::File;
 use std::io::prelude::*;
 
 #[macro_use]
-mod macros;
+pub mod macros;
 
-mod utils;
+pub mod utils;
 
 // mod twenty_fifteen;
 // mod twenty_sixteen;
@@ -53,4 +53,8 @@ macro_rules! run_day {
     };
 }
 
-run_day!(day19);
+// run_day!(day19);
+
+fn main() {
+
+}

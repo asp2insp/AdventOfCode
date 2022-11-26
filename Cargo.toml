@@ -1,7 +1,7 @@
 [package]
 authors = ["Josiah Gaskin <josiah@josiahgaskin.com>"]
 edition = "2021"
-name = "advent-of-code"
+name = "aoc"
 version = "0.1.0"
 
 [dependencies]
