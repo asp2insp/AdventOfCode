@@ -32,7 +32,7 @@ macro_rules! ppush {
 macro_rules! makeset {
     ( $( $e:expr),*$(,)* ) => {
         {
-            let mut set = std::collections::HashSet::new();
+            let mut set = fnv::FnvHashSet::default();
             $(
                 set.insert($e);
             )*
@@ -44,8 +44,8 @@ macro_rules! makeset {
 macro_rules! dict {
     ($($i:expr => $e:expr),* $(,)?) => {
         {
-            use std::collections::HashMap;
-            let mut m = HashMap::new();
+            use fnv::FnvHashMap;
+            let mut m = FnvHashMap::default();
             $(
                 m.insert($i, $e);
             )*
@@ -57,6 +57,6 @@ macro_rules! dict {
 #[test]
 fn test_dict() {
     use itertools::*;
-    use std::collections::HashMap;
-    assert_eq!((0..3).zip(['a', 'b', 'c']).collect::<HashMap<usize, char>>(), dict!{0 => 'a', 1 => 'b', 2 => 'c'});
+    use fnv::FnvHashMap;
+    assert_eq!((0..3).zip(['a', 'b', 'c']).collect::<FnvHashMap<usize, char>>(), dict!{0 => 'a', 1 => 'b', 2 => 'c'});
 }

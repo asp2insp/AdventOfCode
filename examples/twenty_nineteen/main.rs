@@ -1,5 +1,6 @@
-pub mod day17;
+pub mod day18;
 pub mod intcode;
+
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -11,6 +12,8 @@ pub fn get_input(mod_name: &str) -> String {
     s.trim().to_string()
 }
 
-fn main() {
-    day17::main()
+pub fn main() {
+    let input = crate::get_input("twenty_nineteen/day18");
+    println!("1> {:?}", day18::part1(input.clone()));
+    println!("2> {:?}", day18::part2(input.clone()));
 }

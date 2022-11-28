@@ -100,8 +100,4 @@ pub fn part2(input: String) -> String {
 	"part2".to_owned()
 }
 
-pub fn main() {
-    let input = crate::get_input("twenty_nineteen/day17");
-    println!("1> {:?}", part1(input.clone()));
-    println!("2> {:?}", part2(input.clone()));
-}
+

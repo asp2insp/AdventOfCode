@@ -1,9 +1,10 @@
+use fnv::{FnvHashMap, FnvHashSet};
 use itertools::*;
 use std::any::TypeId;
 use std::cell::Cell;
 use std::cmp::{max, min};
-use std::collections::{HashSet, VecDeque};
-use fnv::{FnvHashMap};
+use std::collections::BTreeMap;
+use std::collections::VecDeque;
 use std::fmt;
 use std::hash::Hash;
 use std::ops::RangeInclusive;
@@ -33,14 +34,91 @@ pub trait IterUtils: Iterator {
     }
 }
 
+pub fn flip<T, U>((a, b): (T, U)) -> (U, T) {
+    (b, a)
+}
+
+#[derive(Clone, Debug)]
+pub struct VecSet<T>(Vec<T>);
+
+impl<T> VecSet<T>
+where
+    T: PartialEq + Clone + Ord,
+{
+    pub fn new() -> VecSet<T> {
+        Self(vec![])
+    }
+
+    pub fn contains(&self, t: &T) -> bool {
+        self.0.iter().contains(t)
+    }
+
+    pub fn insert(&mut self, t: T) -> bool {
+        if self.contains(&t) {
+            false
+        } else {
+            self.0.push(t);
+            true
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn clone_with(&self, t: T) -> Self {
+        let mut nv = VecSet(self.0.clone());
+        nv.insert(t);
+        nv
+    }
+
+    pub fn starts_with(&self, v: &[T]) -> bool {
+        self.0.starts_with(&v)
+    }
+
+    pub fn key(&self) -> Vec<T> {
+        let mut selfsorted = self.0.clone();
+        selfsorted.sort();
+        selfsorted
+    }
+}
+
+impl<T> VecSet<T>
+where
+    T: std::fmt::Debug,
+{
+    pub fn stringify(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+impl<T> PartialEq for VecSet<T>
+where
+    T: PartialEq + Clone + Ord,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0.iter().all(|c| other.contains(c)) && other.0.iter().all(|c| self.contains(c))
+    }
+}
+
+impl<T> Eq for VecSet<T> where T: PartialEq + Clone + Ord {}
+
+impl<T> Hash for VecSet<T>
+where
+    T: Clone + Hash + Ord,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.key().hash(state);
+    }
+}
+
 pub fn div_up(a: usize, b: usize) -> usize {
-    (a + (b-1))/b
+    (a + (b - 1)) / b
 }
 
 pub fn from_bits(bits: &[u8]) -> usize {
     bits.iter().fold(0, |n, b| (n << 1) + *b as usize)
 }
-
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct P3 {
@@ -55,7 +133,7 @@ impl P3 {
     }
 
     pub fn new(x: isize, y: isize, z: isize) -> P3 {
-        P3 {x, y, z}
+        P3 { x, y, z }
     }
 
     pub fn from(xyz: &(isize, isize, isize)) -> P3 {
@@ -106,7 +184,11 @@ impl P3 {
     }
 
     pub fn flip(&self, flip: P3) -> P3 {
-        P3 { x: self.x * signum_one(flip.x), y: self.y * signum_one(flip.y), z: self.z * signum_one(flip.z) }
+        P3 {
+            x: self.x * signum_one(flip.x),
+            y: self.y * signum_one(flip.y),
+            z: self.z * signum_one(flip.z),
+        }
     }
 
     pub fn flip_and_rotate(&self, frots: P3) -> P3 {
@@ -169,7 +251,11 @@ impl std::ops::Sub for P3 {
 
 impl From<&str> for P3 {
     fn from(s: &str) -> Self {
-        let (x, y, z) = s.split(',').map(|c| parse!(c, isize)).collect_tuple::<_>().unwrap();
+        let (x, y, z) = s
+            .split(',')
+            .map(|c| parse!(c, isize))
+            .collect_tuple::<_>()
+            .unwrap();
         P3 { x, y, z }
     }
 }
@@ -209,7 +295,10 @@ pub fn to_bits(mut n: usize, len: Option<usize>) -> Vec<u8> {
     res
 }
 
-pub fn add_counting_sets<T: Hash + Eq>(a: FnvHashMap<T, usize>, mut b: FnvHashMap<T, usize>) -> FnvHashMap<T, usize> {
+pub fn add_counting_sets<T: Hash + Eq>(
+    a: FnvHashMap<T, usize>,
+    mut b: FnvHashMap<T, usize>,
+) -> FnvHashMap<T, usize> {
     for (k, v) in a.into_iter() {
         *b.entry(k).or_insert(0) += v;
     }
@@ -218,10 +307,15 @@ pub fn add_counting_sets<T: Hash + Eq>(a: FnvHashMap<T, usize>, mut b: FnvHashMa
 
 pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
     use regex::*;
-        let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
-        return s.lines().map(|l| {
-            re.captures_iter(l.trim()).map(|c| parse!(c[1], isize)).collect::<Vec<isize>>()
-        }).collect::<Vec<Vec<isize>>>()
+    let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+    return s
+        .lines()
+        .map(|l| {
+            re.captures_iter(l.trim())
+                .map(|c| parse!(c[1], isize))
+                .collect::<Vec<isize>>()
+        })
+        .collect::<Vec<Vec<isize>>>();
 }
 
 fn free_neighbors_bounded(p: Point, bounds: Option<(isize, isize, isize, isize)>) -> Vec<Point> {
@@ -231,6 +325,10 @@ fn free_neighbors_bounded(p: Point, bounds: Option<(isize, isize, isize, isize)>
         Point {x: p.x , y: p.y - 1}, if bounds.map(|b| p.y > b.1).unwrap_or(true),
         Point {x: p.x, y: p.y + 1}, if bounds.map(|b| p.y < b.3).unwrap_or(true),
     ]
+}
+
+fn default_map<K, V>() -> BTreeMap<K, V> {
+    Default::default()
 }
 
 impl<T: ?Sized> IterUtils for T where T: Iterator {}
@@ -269,7 +367,7 @@ impl FromStr for Direction {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
 pub struct Point {
     pub x: isize,
     pub y: isize,
@@ -277,10 +375,7 @@ pub struct Point {
 
 impl From<(isize, isize)> for Point {
     fn from(tup: (isize, isize)) -> Point {
-        Point {
-            x: tup.0,
-            y: tup.1,
-        }
+        Point { x: tup.0, y: tup.1 }
     }
 }
 
@@ -304,7 +399,7 @@ impl From<(i32, i32)> for Point {
 
 impl Point {
     pub fn new(x: isize, y: isize) -> Self {
-        Point {x, y}
+        Point { x, y }
     }
 
     pub fn offset(&self, offsets: (isize, isize)) -> Self {
@@ -317,16 +412,18 @@ impl Point {
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Grid<T> {
-    map: FnvHashMap<Point, (char, T)>,
+    // map: FnvHashMap<Point, (char, T)>,
+    map: BTreeMap<Point, (char, T)>,
     pub wall_char: char,
     pub floor_char: char,
     pub left_bound: isize,
     pub right_bound: isize,
     pub top_bound: isize,
     pub bottom_bound: isize,
+    wall_cache: Option<Vec<Vec<bool>>>,
 }
 
-impl <T> std::hash::Hash for Grid<T> {
+impl<T> std::hash::Hash for Grid<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.to_string().hash(state);
     }
@@ -335,13 +432,14 @@ impl <T> std::hash::Hash for Grid<T> {
 impl<T> Default for Grid<T> {
     fn default() -> Grid<T> {
         Grid {
-            map: FnvHashMap::default(),
+            map: default_map(),
             wall_char: '\0',
             floor_char: '\0',
             left_bound: 0,
             right_bound: 0,
             top_bound: 0,
             bottom_bound: 0,
+            wall_cache: None,
         }
     }
 }
@@ -355,7 +453,7 @@ impl<T> Grid<T> {
     }
 
     pub fn new_with(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
-        let mut m = FnvHashMap::default();
+        let mut m = default_map();
         for (li, l) in s.lines().rev().enumerate() {
             for (ci, c) in l.trim().chars().enumerate() {
                 m.insert(Point::from((ci, li)), (c, f(c)));
@@ -384,7 +482,7 @@ impl<T> Grid<T> {
     ) -> Grid<T> {
         let mut x = left;
         let mut y = bottom;
-        let mut m = FnvHashMap::default();
+        let mut m = default_map();
         while x <= right {
             while y <= top {
                 let p = Point::from((x, y));
@@ -405,11 +503,10 @@ impl<T> Grid<T> {
     }
 
     pub fn new_iter(&self, f: impl Fn(Point, char, &T) -> (char, T)) -> Grid<T> {
-        let mut map = FnvHashMap::default();
-        self.iter_range(None, None)
-            .for_each(|(p, c, t)| {
-                map.insert(p.clone(), f(p, c, t));
-            });
+        let mut map = default_map();
+        self.iter_range(None, None).for_each(|(p, c, t)| {
+            map.insert(p.clone(), f(p, c, t));
+        });
         Grid {
             map,
             left_bound: self.left_bound,
@@ -418,15 +515,34 @@ impl<T> Grid<T> {
             bottom_bound: self.top_bound,
             wall_char: self.wall_char,
             floor_char: self.floor_char,
+            wall_cache: None,
         }
     }
-    
-    pub fn add_other(&mut self, other: &Grid<T>, d: Direction) where T: Clone {
+
+    pub fn with_wall(self, w: char) -> Self {
+        let (l, b, r, t) = self.calc_bounds();
+        let mut wc = vec![vec![false; t as usize + 1]; r as usize + 1];
+        self.iter_chars().for_each(|(p, c)| {
+            if c == w {
+                wc[p.x as usize][p.y as usize] = true;
+            }
+        });
+        Grid {
+            wall_char: w,
+            wall_cache: Some(wc),
+            ..self
+        }
+    }
+
+    pub fn add_other(&mut self, other: &Grid<T>, d: Direction)
+    where
+        T: Clone,
+    {
         let offsets = match d {
-            Direction::W => (-(other.right_bound+1) + self.left_bound, 0),
+            Direction::W => (-(other.right_bound + 1) + self.left_bound, 0),
             Direction::N => (0, (self.top_bound + 1) - other.bottom_bound),
-            Direction::E => ((self.right_bound+1) - other.left_bound, 0),
-            Direction::S => (0, -(other.top_bound+1) + self.bottom_bound),
+            Direction::E => ((self.right_bound + 1) - other.left_bound, 0),
+            Direction::S => (0, -(other.top_bound + 1) + self.bottom_bound),
         };
         self.left_bound = 0;
         self.right_bound = 0;
@@ -462,7 +578,7 @@ impl<T> Grid<T> {
         if !self.has_bounds() {
             true
         } else {
-            let Point{x, y} = p;
+            let Point { x, y } = p;
             self.left_bound <= x
                 && self.right_bound >= x
                 && self.bottom_bound <= y
@@ -490,7 +606,7 @@ impl<T> Grid<T> {
         let mut right = isize::MIN;
         let mut top = isize::MIN;
 
-        for Point{x, y} in self.map.keys() {
+        for Point { x, y } in self.map.keys() {
             left = min(left, *x);
             right = max(right, *x);
             bottom = min(bottom, *y);
@@ -522,8 +638,7 @@ impl<T> Grid<T> {
     pub fn get_mut(&mut self, p: Point) -> Option<&mut (char, T)> {
         if !self.in_bounds(p) {
             None
-        }
-        else {
+        } else {
             self.map.get_mut(&p)
         }
     }
@@ -555,6 +670,12 @@ impl<T> Grid<T> {
             .into_iter()
     }
 
+    pub fn find(&self, needle: char) -> Option<Point> {
+        self.iter_chars()
+            .find(|(p, c)| *c == needle)
+            .map(|(p, _)| p)
+    }
+
     pub fn fill_with(
         &mut self,
         xrange: Option<RangeInclusive<isize>>,
@@ -579,9 +700,10 @@ impl<T> Grid<T> {
         let (l, bt, r, tp) = self.get_bounds();
         let xrange = xrange.unwrap_or(l..=r);
         let yrange = yrange.unwrap_or(bt..=tp);
-        xrange
-            .cartesian_product(yrange)
-            .filter_map(|xy| self.get(Point::from(xy)).map(|ct| (Point::from(xy), ct.0, &ct.1)))
+        xrange.cartesian_product(yrange).filter_map(|xy| {
+            self.get(Point::from(xy))
+                .map(|ct| (Point::from(xy), ct.0, &ct.1))
+        })
     }
 
     pub fn for_each_mut(
@@ -593,21 +715,23 @@ impl<T> Grid<T> {
         let (l, bt, r, tp) = self.get_bounds();
         let xrange = xrange.unwrap_or(l..=r);
         let yrange = yrange.unwrap_or(bt..=tp);
-        xrange
-            .cartesian_product(yrange)
-            .for_each(|xy| {
-                if let Some(ct) = self.map.get_mut(&Point::from(xy)) {
-                    f(ct);
-                }
-            });
+        xrange.cartesian_product(yrange).for_each(|xy| {
+            if let Some(ct) = self.map.get_mut(&Point::from(xy)) {
+                f(ct);
+            }
+        });
     }
 
     pub fn is_wall(&self, p: Point) -> bool {
         self.has_walls()
-            && self
-                .get(p)
-                .map(|ct| ct.0 == self.wall_char)
-                .unwrap_or(false)
+            && self.wall_cache.as_ref().map_or_else(
+                || {
+                    self.get(p)
+                        .map(|ct| ct.0 == self.wall_char)
+                        .unwrap_or(false)
+                },
+                |wc| wc[p.x as usize][p.y as usize],
+            )
     }
 
     pub fn drive(&self, p: Point, d: Direction) -> Option<Point> {
@@ -698,17 +822,31 @@ impl<T> Grid<T> {
     pub fn three_by_three(&self, p: Point, default: char) -> impl Iterator<Item = char> {
         use Direction::*;
         vec![
-            self.drive2(p, N, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-            self.drive(p, N).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-            self.drive2(p, N, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-            
-            self.drive(p, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive2(p, N, W)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive(p, N)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive2(p, N, E)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive(p, W)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
             self.get(p).map(|tup| tup.0),
-            self.drive(p, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-
-            self.drive2(p, S, W).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-            self.drive(p, S).and_then(|p3| self.get(p3)).map(|tup| tup.0),
-            self.drive2(p, S, E).and_then(|p3| self.get(p3)).map(|tup| tup.0),
+            self.drive(p, E)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive2(p, S, W)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive(p, S)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
+            self.drive2(p, S, E)
+                .and_then(|p3| self.get(p3))
+                .map(|tup| tup.0),
         ]
         .into_iter()
         .map(move |o| o.unwrap_or(default))
@@ -721,28 +859,43 @@ impl<T> Grid<T> {
         pt2: Point,
         weight: Option<impl Fn(Point) -> isize>,
     ) -> (isize, Vec<Point>) {
+        self.try_dfs_path(pt1, pt2, weight).unwrap()
+    }
+
+    pub fn try_dfs_path(
+        &self,
+        pt1: Point,
+        pt2: Point,
+        weight: Option<impl Fn(Point) -> isize>,
+    ) -> Option<(isize, Vec<Point>)> {
         let mut results = self.dfs_path_bulk(pt1, makeset! {pt2}, weight);
-        results.remove(&pt2).unwrap()
+        results.remove(&pt2)
     }
 
     pub fn dfs_path_bulk(
         &self,
         pt1: Point,
-        dests: HashSet<Point>,
+        dests: FnvHashSet<Point>,
         weight: Option<impl Fn(Point) -> isize>,
     ) -> FnvHashMap<Point, (isize, Vec<Point>)> {
         // Maps point => cost, parent_point
-        let mut seen: FnvHashMap<Point, (isize, Point)> = FnvHashMap::default();
-        let mut results = FnvHashMap::default();
+        let mut seen: FnvHashMap<Point, (isize, Point)> =
+            FnvHashMap::with_capacity_and_hasher(dests.len() * 10, Default::default());
+        let mut results = FnvHashMap::with_capacity_and_hasher(dests.len(), Default::default());
         let mut stack = Vec::new();
         stack.push((pt1, 0));
         loop {
+            if stack.is_empty() {
+                return results;
+            }
             let (curr, cost) = stack.pop().expect(&format!(
                 "Dead end! found {} out of {}",
                 results.len(),
                 dests.len()
             ));
-            if dests.contains(&curr) && !results.contains_key(&curr) {
+            if dests.contains(&curr)
+                && cost < results.get(&curr).map(|(c, _)| *c).unwrap_or(isize::MAX)
+            {
                 let mut traceback = curr;
                 let mut ret_path = vec![traceback];
                 while traceback != pt1 {
@@ -769,8 +922,8 @@ impl<T> Grid<T> {
                 {
                     continue;
                 }
-                seen.insert(np, (cost + w, curr));
-                stack.push((np, cost + w));
+                seen.insert(np, (cost.saturating_add(w), curr));
+                stack.push((np, cost.saturating_add(w)));
             }
         }
     }
@@ -780,7 +933,7 @@ impl<T> Grid<T> {
         &self,
         start: Point,
         pred: impl Fn(Point, Point) -> bool,
-    ) -> HashSet<Point> {
+    ) -> FnvHashSet<Point> {
         let mut q = vec![start];
         let mut res = makeset![start];
         while let Some(p) = q.pop() {
@@ -798,18 +951,24 @@ impl<T> Grid<T> {
     // Returns map of point => (min_cost_sum, parent)
     pub fn bfs_generic(
         &self,
-        starts: HashSet<Point>,
-        expand: Option<& dyn Fn(Point) -> Vec<(Point, isize)>>,
-        is_done: Option<& dyn Fn(&FnvHashMap<Point, (isize, Point)>) -> bool>,
+        starts: FnvHashSet<Point>,
+        expand: Option<&dyn Fn(Point) -> Vec<(Point, isize)>>,
+        is_done: Option<&dyn Fn(&FnvHashMap<Point, (isize, Point)>) -> bool>,
     ) -> FnvHashMap<Point, (isize, Point)> {
-        let mut res: FnvHashMap<Point, (isize, Point)> = starts.iter().map(|s| (*s, (0, *s))).collect();
+        let mut res: FnvHashMap<Point, (isize, Point)> =
+            starts.iter().map(|s| (*s, (0, *s))).collect();
         let mut q = starts.into_iter().collect::<VecDeque<_>>();
         while let Some(p) = q.pop_front() {
             let curr_min_cost = res.get(&p).map(|tup| tup.0).unwrap_or(isize::MAX);
-            for n in expand.as_ref().map(|f| f(p)).unwrap_or(self.neighbors_default(p)) {
+            for n in expand
+                .as_ref()
+                .map(|f| f(p))
+                .unwrap_or(self.neighbors_default(p))
+            {
                 let np = n.0;
                 let next_cost = curr_min_cost.saturating_add(n.1);
-                let should_include = res.get(&np).map(|tup| tup.0).unwrap_or(isize::MAX) > next_cost;
+                let should_include =
+                    res.get(&np).map(|tup| tup.0).unwrap_or(isize::MAX) > next_cost;
                 if should_include {
                     res.insert(np, (next_cost, p));
                     if is_done.as_ref().map(|f| f(&res)).unwrap_or(false) {
@@ -828,11 +987,16 @@ impl<T> fmt::Display for Grid<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (l, b, r, t) = self.get_bounds();
         for line_no in (b..=t).rev() {
-            write!(f, "{}", (l..=r).map(|col_no| 
-                self.get(Point::from((col_no, line_no)))
-                    .map(|ct| ct.0)
-                    .unwrap_or(' ')
-            ).collect::<String>())?;
+            write!(
+                f,
+                "{}",
+                (l..=r)
+                    .map(|col_no| self
+                        .get(Point::from((col_no, line_no)))
+                        .map(|ct| ct.0)
+                        .unwrap_or(' '))
+                    .collect::<String>()
+            )?;
             if line_no != b {
                 write!(f, "\n")?;
             }
@@ -891,7 +1055,10 @@ mod test {
             path
         );
         assert_eq!(4, path_cost);
-        assert_eq!(9, g.dfs_path((1, 11).into(), (9, 9).into(), Some(&cost_fn)).0);
+        assert_eq!(
+            9,
+            g.dfs_path((1, 11).into(), (9, 9).into(), Some(&cost_fn)).0
+        );
     }
 
     #[test]

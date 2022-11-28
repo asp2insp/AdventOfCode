@@ -55,6 +55,3 @@ macro_rules! run_day {
 
 // run_day!(day19);
 
-fn main() {
-
-}
