@@ -1,7 +1,7 @@
 use aoc::utils::*;
-use std::collections::{BinaryHeap};
 use fnv::{FnvHashMap, FnvHashSet};
 use itertools::Itertools;
+use std::collections::BinaryHeap;
 
 #[derive(Eq, PartialEq, Clone, Debug, Hash)]
 struct State {
@@ -43,7 +43,7 @@ impl State {
 }
 
 pub fn part1(input: String) -> String {
-    let (grid, start_loc, keys) = parse(&input);
+    let (grid, start_loc, keys, distances) = parse(&input);
     let mut states = BinaryHeap::new();
     states.push(State::new(start_loc));
     let mut gen = 0;
@@ -54,33 +54,37 @@ pub fn part1(input: String) -> String {
             continue;
         }
         seen.insert(s.key(), s.cost);
-        let currbest = (s.cost, s.keys.clone());
+        let curr = (s.cost, s.keys.clone());
         if s.keys.len() == keys.len() {
             println!("Possible Soln {:?} with cost {}", s.keys, s.cost);
             if s.cost < best {
                 best = s.cost;
-                // states = states.into_iter().filter(|s| s.cost <= best).collect();
             }
-			continue
+            continue;
         }
         gen += 1;
-        states.extend(
-            reachable(&grid, &keys, s),
-        );
-        if gen % 1000 == 0 {
+        states.extend(reachable(&grid, &keys, &distances, s));
+        if gen % 10000 == 0 {
             println!(
                 "Gen {} with {} current states. Current is {:?} keys at a cost of {}",
                 gen,
                 states.len(),
-                currbest.1,
-                currbest.0,
+                curr.1,
+                curr.0,
             );
         }
     }
     return best.to_string();
 }
 
-fn parse(s: &str) -> (Grid<()>, Point, FnvHashMap<char, Point>) {
+fn parse(
+    s: &str,
+) -> (
+    Grid<()>,
+    Point,
+    FnvHashMap<char, Point>,
+    FnvHashMap<(Point, Point), isize>,
+) {
     let g = Grid::new(s, ()).with_wall('#');
     let start_loc = g.find('@').unwrap();
     let keys = g
@@ -88,61 +92,88 @@ fn parse(s: &str) -> (Grid<()>, Point, FnvHashMap<char, Point>) {
         .filter(|(_, c)| *c <= 'z' && *c >= 'a')
         .map(flip)
         .collect();
-    (g, start_loc, keys)
+    let dist = find_distances(&g, &keys, start_loc);
+    (g, start_loc, keys, dist)
 }
 
-fn reachable(g: &Grid<()>, keys: &FnvHashMap<char, Point>, start: State) -> Vec<State> {
-    let reachable_keys: FnvHashSet<Point> = g
-        .flood_search_by_pred(start.loc, |f, t| {
-			let fc = g.read_pt(&f);
-			let tc = g.read_pt(&t);
-			if keys.contains_key(&fc) && !start.keys.contains(&fc) {
-				false
-			} else if tc.is_uppercase() && tc.is_alphabetic() && !start.keys.contains(&tc.to_ascii_lowercase()) {
-				false
-			} else {
-				true
-			}
-		})
-        .into_iter()
-        .filter_map(|p| {
-			let c = &g.read_pt(&p);
-            if start.keys.contains(c) || !keys.contains_key(c) {
-                None
-            } else {
-                Some(p)
-            }
-        })
-        .collect();
-	// println!("reachable keys {:?} from {:?} with {:?}", reachable_keys.iter().map(|p| g.read_pt(p)).collect_vec(), start.loc, start.keys);
-    let ret = g.dfs_path_bulk(
+fn find_distances(
+    g: &Grid<()>,
+    keys: &FnvHashMap<char, Point>,
+    start_loc: Point,
+) -> FnvHashMap<(Point, Point), isize> {
+    // For each key and start loc, find distances to all other keys
+    let mut ret = FnvHashMap::with_capacity_and_hasher((keys.len() + 1).pow(2), Default::default());
+    ret.extend(
+        g.dfs_path_bulk(start_loc, keys.values().cloned().collect(), Some(|_| 1))
+            .into_iter()
+            .map(|(p, (c, _))| ((start_loc, p), c)),
+    );
+    for from in keys.values() {
+        ret.extend(
+            g.dfs_path_bulk(*from, keys.values().cloned().collect(), Some(|_| 1))
+                .into_iter()
+                .map(|(p, (c, _))| ((*from, p), c)),
+        );
+    }
+    ret
+}
+
+fn reachable(
+    g: &Grid<()>,
+    keys: &FnvHashMap<char, Point>,
+    distances: &FnvHashMap<(Point, Point), isize>,
+    start: State,
+) -> Vec<State> {
+    g.dfs_path_bulk(
         start.loc,
-        reachable_keys,
+        keys.iter()
+            .filter_map(|(c, &p)| {
+                if start.keys.contains(c) {
+                    None
+                } else {
+                    Some(p)
+                }
+            })
+            .collect(),
         Some(|np| {
-            let nc = g.get(np).unwrap().0;
-            if nc == '.'
-                || nc == '@'
-                || keys.contains_key(&nc)
-                || start.keys.contains(&nc.to_ascii_lowercase())
+            let nc = g.read_pt(&np);
+            if nc.is_uppercase()
+                && nc.is_alphabetic()
+                && !start.keys.contains(&nc.to_ascii_lowercase())
             {
-                1
-            } else {
                 isize::MAX
+            } else {
+                1
             }
         }),
     )
     .into_iter()
-    .map(|(p, (ncost, _))| State {
-        loc: p,
+    .map(|(to, (ncost, _))| State {
+        loc: to,
         cost: start.cost.saturating_add(ncost),
-        keys: start.keys.clone_with(g.get(p).unwrap().0),
+        keys: start.keys.clone_with(g.get(to).unwrap().0),
     })
-    .collect();
-	// println!("    {:?}", ret);
-	ret
+    .collect()
 }
 
 pub fn part2(input: String) -> String {
+    let (mut grid, start_loc, keys, distances) = parse(&input);
+    // Split into 4 subgrids
+    grid.set(start_loc, '#', ());
+    for n in grid.neighbors(start_loc) {
+        grid.set(n, '#', ());
+    }
+    grid = grid.with_wall('#');
+
+    let states = [
+        State::new(start_loc.offset((-1, -1))),
+        State::new(start_loc.offset((-1, 1))),
+        State::new(start_loc.offset((1, -1))),
+        State::new(start_loc.offset((1, 1))),
+    ];
+
+    let mut states = BinaryHeap::new();
+    states.push(State::new(start_loc));
     "part2".to_string()
 }
 
@@ -152,10 +183,13 @@ fn test_simple() {
 #b.A.@.a#
 #########
 "#;
-    let (grid, start_loc, keys) = parse(s);
+    let (grid, start_loc, keys, distances) = parse(s);
     assert_eq!(
         "[State { cost: 2, loc: Point { x: 7, y: 1 }, keys: VecSet(['a']) }]",
-        format!("{:?}", reachable(&grid, &keys, State::new(start_loc)))
+        format!(
+            "{:?}",
+            reachable(&grid, &keys, &distances, State::new(start_loc))
+        )
     );
     assert_eq!("8", part1(s.to_owned()));
 }
@@ -168,8 +202,7 @@ fn test_larger() {
 #d.....................#
 ########################
 "#;
-        assert_eq!("86", part1(s.to_owned()));
-
+    assert_eq!("86", part1(s.to_owned()));
 }
 
 #[test]
@@ -179,13 +212,12 @@ fn test_2() {
     #.######################
     #.....@.a.B.c.d.A.e.F.g#
     ########################"#;
-        assert_eq!("132", part1(s2.to_owned()));
+    assert_eq!("132", part1(s2.to_owned()));
 }
 
 #[test]
 fn test_3() {
-    let s3 =
-    r#"#################
+    let s3 = r#"#################
     #i.G..c...e..H.p#
     ########.########
     #j.A..b...f..D.o#
@@ -194,20 +226,19 @@ fn test_3() {
     ########.########
     #l.F..d...h..C.m#
     #################"#;
-            assert_eq!("136", part1(s3.to_owned()));
+    assert_eq!("136", part1(s3.to_owned()));
     // assert!(false)
 }
 
 #[test]
 fn test_4() {
-    let s4 = 
-    r#"########################
+    let s4 = r#"########################
     #@..............ac.GI.b#
     ###d#e#f################
     ###A#B#C################
     ###g#h#i################
     ########################"#;
-        assert_eq!("81", part1(s4.to_owned()));
-    
-        // assert!(false);
+    assert_eq!("81", part1(s4.to_owned()));
+
+    // assert!(false);
 }

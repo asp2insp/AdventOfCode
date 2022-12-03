@@ -9,19 +9,16 @@ pub mod macros;
 
 pub mod utils;
 
-// mod twenty_fifteen;
-// mod twenty_sixteen;
-// mod twenty_seventeen;
-// mod twenty_eighteen;
 
 pub fn get_input(mod_name: &str) -> String {
-    let path = format!("input/{}", mod_name);
+    let path = format!("input/now/{}", mod_name);
     let mut f = File::open(path).unwrap();
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
     s.trim().to_string()
 }
 
+#[macro_export]
 macro_rules! run_day {
     // this macro takes an argument of "type" `ident`
     // the `ident` designator is used for variable/function names
@@ -29,7 +26,7 @@ macro_rules! run_day {
         mod $mod_name;
         fn main() {
             println!("Running {:?}...", stringify!($mod_name));
-            let args: HashSet<String> = env::args().skip(1).collect();
+            let args: std::collections::HashSet<String> = std::env::args().skip(1).collect();
             if args.contains("1") {
                 println!(
                     "1> {:?}",
@@ -45,10 +42,6 @@ macro_rules! run_day {
             if !args.contains("1") && !args.contains("2") {
                 println!("Specify part 1 or part 2");
             }
-
-            
-            // println!("Old: {:?}", twenty_nineteen::day17::part1(get_input("twenty_nineteen/day17")));
-            // // println!("Old: {:?}", twenty_nineteen::day17::part2(get_input("twenty_nineteen/day17")));
         }
     };
 }

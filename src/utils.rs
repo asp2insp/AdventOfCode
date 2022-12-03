@@ -318,6 +318,21 @@ pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
         .collect::<Vec<Vec<isize>>>();
 }
 
+pub fn gimme_chunks(s: &str) -> Vec<Vec<&str>> {
+    let mut ret = vec![];
+    let mut curr = vec![];
+    for line in s.lines() {
+        if line.is_empty() {
+            ret.push(curr);
+            curr = vec![];
+        } else {
+            curr.push(line);
+        }
+    }
+    ret
+}
+
+
 fn free_neighbors_bounded(p: Point, bounds: Option<(isize, isize, isize, isize)>) -> Vec<Point> {
     veci![
         Point {x: p.x - 1, y: p.y}, if bounds.map(|b| p.x > b.0).unwrap_or(true),
