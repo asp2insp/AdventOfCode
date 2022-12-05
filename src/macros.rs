@@ -41,6 +41,7 @@ macro_rules! makeset {
     };
 }
 
+#[macro_export]
 macro_rules! dict {
     ($($i:expr => $e:expr),* $(,)?) => {
         {
@@ -50,6 +51,23 @@ macro_rules! dict {
                 m.insert($i, $e);
             )*
             m
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! make_ord {
+    ($t:ty, |$this:ident, $other:ident| $body:expr) => {
+        impl std::cmp::PartialOrd for $t {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+        
+        impl std::cmp::Ord for $t {
+            fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                (|$this: &Self, $other: &Self| {$body})(self, other)
+            }
         }
     };
 }

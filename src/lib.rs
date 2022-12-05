@@ -15,7 +15,7 @@ pub fn get_input(mod_name: &str) -> String {
     let mut f = File::open(path).unwrap();
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
-    s.trim().to_string()
+    s.trim_end().to_string()
 }
 
 #[macro_export]

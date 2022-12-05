@@ -10,6 +10,40 @@ use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
+
+/// Run an A* algorithm over the given search space.
+/// Takes a start state, a heuristic function to rank search candidates,
+/// an expand function to find neighbors, and finally a done predicate.
+/// TODO expand to track path and reconstruct.
+pub fn a_star<S, D, H, E>(start: S, heuristic: H, expand: E, done: D) -> Option<isize> //(isize, Vec<S>) 
+    where S: Clone + Hash + Eq, D: Fn(&S) -> bool, H: Fn(&S) -> isize, E: Fn(S) -> Vec<(S, isize)> {
+        let mut cost = FnvHashMap::default();
+        cost.insert(start.clone(), 0isize);
+        let mut q = vec![start];
+        while let Some(next) = q.pop() {
+            let curr_cost = *cost.get(&next).unwrap();
+            if done(&next) {
+                return Some(curr_cost)
+            }
+            for (neighbor, step_cost) in expand(next) {
+                let cost_e = cost.entry(neighbor.clone()).or_insert(isize::MAX);
+                if step_cost + curr_cost < *cost_e {
+                    *cost_e = step_cost + curr_cost;
+                    q.push(neighbor);
+                }
+            }
+            q.sort_by_cached_key(|e| cost.get(&e).unwrap_or(&isize::MAX).saturating_add(heuristic(e)));
+            q.reverse();
+        }
+        // We can't find a path
+        return None;
+}
+
+pub fn flatten<T, Outer, Inner>(a: Outer) -> impl Iterator<Item=T> 
+    where Outer: IntoIterator<Item=Inner>, Inner: IntoIterator<Item=T> {
+        a.into_iter().flat_map(IntoIterator::into_iter)
+    }
+
 pub trait IterUtils: Iterator {
     fn counting_set(self) -> FnvHashMap<Self::Item, usize>
     where
@@ -36,6 +70,19 @@ pub trait IterUtils: Iterator {
 
 pub fn flip<T, U>((a, b): (T, U)) -> (U, T) {
     (b, a)
+}
+
+// Take an MxN matrix and return an NxM one with transposed contents
+pub fn transpose<T>(v: &Vec<Vec<T>>) -> Vec<Vec<T>> where T: Copy + Default {
+    let m = v.len();
+    let n = v[0].len();
+    let mut ret = vec![vec![Default::default(); m]; n];
+    for x in 0..m {
+        for y in 0..n {
+            ret[y][x] = v[x][y];
+        }
+    }
+    ret
 }
 
 #[derive(Clone, Debug)]
@@ -306,16 +353,31 @@ pub fn add_counting_sets<T: Hash + Eq>(
 }
 
 pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
+    parse_nums_from_lines(s.lines())
+}
+
+pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item=&'a str>) -> Vec<Vec<isize>> {
     use regex::*;
     let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
-    return s
-        .lines()
-        .map(|l| {
+    lines.map(|l| {
             re.captures_iter(l.trim())
                 .map(|c| parse!(c[1], isize))
                 .collect::<Vec<isize>>()
         })
-        .collect::<Vec<Vec<isize>>>();
+        .collect::<Vec<Vec<isize>>>()
+}
+
+pub fn gimme_usize_nums(s: &str) -> Vec<Vec<usize>> {
+    use regex::*;
+    let re = Regex::new(r"([\d]+)([^\d]*)").unwrap();
+    return s
+        .lines()
+        .map(|l| {
+            re.captures_iter(l.trim())
+                .map(|c| parse!(c[1], usize))
+                .collect::<Vec<usize>>()
+        })
+        .collect::<Vec<Vec<usize>>>();
 }
 
 pub fn gimme_chunks(s: &str) -> Vec<Vec<&str>> {
