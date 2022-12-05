@@ -1,9 +1,11 @@
 use aoc::make_ord;
 use aoc::utils::*;
-use fnv::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap};
 use itertools::Itertools;
 use std::collections::{BTreeSet, BinaryHeap};
 use rayon::prelude::*;
+
+const BATCH_SIZE: usize = 20;
 
 #[derive(Eq, PartialEq, Clone, Debug, Hash)]
 struct State {
@@ -39,28 +41,36 @@ pub fn part1(input: String) -> String {
     let mut gen = 0;
     let mut best = isize::MAX;
     let mut seen = FnvHashMap::default();
-    while let Some(s) = states.pop() {
-        if s.cost >= best || s.cost >= *seen.get(&s.key()).unwrap_or(&best) {
-            continue;
-        }
-        seen.insert(s.key(), s.cost);
-        let curr = (s.cost, s.keys.clone());
-        if s.keys.len() == keys.len() {
-            println!("Possible Soln {:?} with cost {}", s.keys, s.cost);
-            if s.cost < best {
-                best = s.cost;
-            }
-            continue;
-        }
-        gen += 1;
-        states.extend(reachable(&grid, &keys, s));
+    while !states.is_empty() {
+        let working_group = (0..BATCH_SIZE)
+            .filter_map(|_| states.pop())
+            .filter(|s| {
+                if s.cost >= best || s.cost >= *seen.get(&s.key()).unwrap_or(&best) {
+                    false
+                } else if s.keys.len() == keys.len() {
+                    println!("Possible Soln {:?} with cost {}", s.keys, s.cost);
+                    if s.cost < best {
+                        best = s.cost;
+                    }
+                    false
+                } else {
+                    seen.insert(s.key(), s.cost);
+                    gen += 1;
+                    true
+                }
+            })
+            .collect_vec();
+        let extend = working_group.into_par_iter()
+            .map(|s|
+                reachable(&grid, &keys, s))
+            .collect::<Vec<_>>();
+        states.extend(flatten(extend));
         if gen % 10000 == 0 {
             println!(
-                "Gen {} with {} current states. Current is {:?} keys at a cost of {}",
+                "Gen {} with {} current states. Current best cost of {}",
                 gen,
                 states.len(),
-                curr.1,
-                curr.0,
+                best,
             );
         }
     }
@@ -163,7 +173,7 @@ pub fn part2(input: String) -> String {
     let mut best = isize::MAX;
     let mut seen = FnvHashMap::default();
     while !states.is_empty() {
-        let working_group = (0..20)
+        let working_group = (0..BATCH_SIZE)
             .filter_map(|_| states.pop())
             .filter(|s| {
                 if s.cost >= best || s.cost >= *seen.get(&s.key()).unwrap_or(&best) {
@@ -217,35 +227,6 @@ pub fn part2(input: String) -> String {
         }
     }
     return best.to_string();
-
-    // println!("{}", grid.to_string());
-
-    // a_star(
-    //     start,
-    //     |s| (keys.len() - s.keys.len()) as isize,
-    //     |s| {
-    //         let mut ret = vec![];
-    //         for i in 0..s.positions.len() {
-    //             for r in reachable(&grid, &keys, State {
-    //                 keys: s.keys.iter().cloned().collect(),
-    //                 cost: 0,
-    //                 loc: s.positions[i],
-    //             }).into_iter() {
-    //                 let mut next = s.clone();
-    //                 next.keys = r.keys;
-    //                 next.positions[i] = r.loc;
-    //                 ret.push((next, r.cost));
-    //             }
-    //         }
-    //         ret
-    //     },
-    //     |s| {
-    //         // println!("Considering {:?}", s.keys);
-    //         s.keys.len() == keys.len()
-    //     },
-    // )
-    // .unwrap()
-    // .to_string()
 }
 
 #[test]
