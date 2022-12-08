@@ -418,6 +418,8 @@ pub enum Direction {
     W,
 }
 
+pub const DIRECTIONS: [Direction; 4] = [Direction::N, Direction::S, Direction::E, Direction::W];
+
 impl Direction {
     pub fn from_char(c: char) -> Result<Direction, ()> {
         use Direction::*;
@@ -828,6 +830,14 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn drive_iter<'a>(&'a self, p: Point, d: Direction) -> impl Iterator<Item=Point> + 'a {
+        DriveIter {
+            dir: d,
+            curr: Some(p),
+            g: self,
+        }
+    }
+
     pub fn drive_wrap(&self, p: Point, d: Direction) -> Point {
         use Direction::*;
         let mut pnew = p;
@@ -1079,6 +1089,24 @@ impl<T> fmt::Display for Grid<T> {
             }
         }
         Ok(())
+    }
+}
+
+struct DriveIter<'a, T> {
+    curr: Option<Point>,
+    dir: Direction,
+    g: &'a Grid<T>,
+}
+
+impl <'a, T> Iterator for DriveIter<'a, T> {
+    type Item = Point;
+    fn next(&mut self) -> Option<Point> {
+        if let Some(p) = self.curr {
+            self.curr = self.g.drive(p, self.dir);
+            self.curr
+        } else {
+            None
+        }
     }
 }
 
