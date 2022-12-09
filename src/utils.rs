@@ -487,6 +487,11 @@ impl Point {
             y: self.y + offsets.1,
         }
     }
+
+    // manhattan distance
+    pub fn dist(&self, other: &Point) -> isize {
+        self.x.abs_diff(other.x) as isize + self.y.abs_diff(other.y) as isize
+    }
 }
 
 #[derive(Clone, Eq, PartialEq)]
