@@ -180,6 +180,16 @@ impl CharSet {
         }
     }
 
+    fn rconv(u: usize) -> char {
+        if u >= 60 {
+            '\0'
+        } else if u < 27 {
+            char::from_u32( (u + 65) as u32).unwrap()
+        } else {
+            char::from_u32((u - 27 + 97) as u32).unwrap()
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.inner == 0
     }
@@ -215,22 +225,70 @@ impl CharSet {
     }
 
     // Calculates this - other
-    pub fn difference(&self, other: &CharSet) -> CharSet {
+    pub fn subtract(&self, other: &CharSet) -> CharSet {
         CharSet {
-            inner: self.inner & (self.inner ^ other.inner)
+            inner: self.inner & !other.inner
         }
+    }
+
+    // Calculates symmetric set difference
+    pub fn sym_set_diff(&self, other: &CharSet) -> CharSet {
+        CharSet {
+            inner: self.inner ^ other.inner,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.count_ones() as usize
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut ret = vec![];
+        let mut i = self.inner;
+        let mut idx = 0;
+        while i != 0 && idx < 60 {
+            if i & 1 > 0 {
+                ret.push(Self::rconv(idx));
+            }
+            idx += 1;
+            i = i >> 1;
+        }
+        ret.sort();
+        format!("CharSet{{{}}}", ret.into_iter().join(","))
     }
 }
 
 #[test]
 fn char_set() {
     let mut s = CharSet::new();
-    s.insert('A');
-    s.insert('B');
-    s.insert('c');
+    assert!(s.insert('A'));
+    assert!(s.insert('B'));
+    assert_eq!(false, s.insert('B'));
+    assert!(s.insert('c'));
 
-    assert_eq!(true, true);
-    todo!()
+    assert_eq!(true, s.contains('A'));  
+    assert_eq!(true, s.contains('B'));
+    assert_eq!(true, s.contains('c'));
+
+    assert_eq!(false, s.contains('C'));
+
+    assert_eq!(true, s.remove('B'));
+    assert_eq!(false, s.contains('B'));
+    assert_eq!(false, s.remove('B'));
+
+    let mut s2 = CharSet::new();
+    s2.insert('a');
+    s2.insert('A');
+    s2.insert('Z');
+
+    assert_eq!(1, s.intersection(&s2).len());
+    assert_eq!(true, s.intersection(&s2).contains('A')); // Intersection should just be A
+    assert_eq!("CharSet{A,Z,a,c}", s.union(&s2).to_string());
+    assert_eq!(4, s.union(&s2).len()); // union should contain A, c, a, Z
+    assert_eq!(true, s.union(&s2).contains('a'));
+
+    assert_eq!("CharSet{c}", s.subtract(&s2).to_string());
+    assert_eq!("CharSet{Z,a,c}", s.sym_set_diff(&s2).to_string());
 }
 
 pub fn div_up(a: usize, b: usize) -> usize {
