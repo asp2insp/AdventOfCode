@@ -159,6 +159,80 @@ where
     }
 }
 
+pub struct CharSet {
+    // 1 bit per char, 1-27 are upper, followed by lower
+    // 0 is null, high bits are metadata
+    inner: u64,
+}
+
+impl CharSet {
+    pub fn new() -> Self {
+        CharSet {inner: 0}
+    }
+
+    fn conv(c: char) -> u64 {
+        if !c.is_ascii_alphabetic() {
+            1 << 63
+        } else if c.is_lowercase() {
+            1 << ((c as usize - 'a' as usize) + 27)
+        } else {
+            1 << (c as usize - 'A' as usize)
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner == 0
+    }
+
+    pub fn contains(&self, c: char) -> bool {
+        self.inner & Self::conv(c) != 0
+    }
+
+    // Return true if the given insertion changed the set
+    pub fn insert(&mut self, c: char) -> bool {
+        let ret = !self.contains(c);
+        self.inner |= Self::conv(c);
+        ret
+    }
+
+    // Return true if the given removal changed the set
+    pub fn remove(&mut self, c: char) -> bool {
+        let ret = self.contains(c);
+        self.inner &= !Self::conv(c);
+        ret
+    }
+
+    pub fn union(&self, other: &CharSet) -> CharSet {
+        CharSet {
+            inner: self.inner | other.inner,
+        }
+    }
+
+    pub fn intersection(&self, other: &CharSet) -> CharSet {
+        CharSet {
+            inner: self.inner & other.inner,
+        }
+    }
+
+    // Calculates this - other
+    pub fn difference(&self, other: &CharSet) -> CharSet {
+        CharSet {
+            inner: self.inner & (self.inner ^ other.inner)
+        }
+    }
+}
+
+#[test]
+fn char_set() {
+    let mut s = CharSet::new();
+    s.insert('A');
+    s.insert('B');
+    s.insert('c');
+
+    assert_eq!(true, true);
+    todo!()
+}
+
 pub fn div_up(a: usize, b: usize) -> usize {
     (a + (b - 1)) / b
 }
