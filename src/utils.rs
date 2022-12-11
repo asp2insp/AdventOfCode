@@ -488,6 +488,14 @@ pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
     parse_nums_from_lines(s.lines())
 }
 
+pub fn gimme_usizes_once(l: &str) -> Vec<usize> {
+    use regex::*;
+    let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+    re.captures_iter(l.trim())
+                .map(|c| parse!(c[1], usize))
+                .collect::<Vec<usize>>()
+}
+
 pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item=&'a str>) -> Vec<Vec<isize>> {
     use regex::*;
     let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
@@ -523,6 +531,7 @@ pub fn gimme_chunks(s: &str) -> Vec<Vec<&str>> {
             curr.push(line);
         }
     }
+    ret.push(curr);
     ret
 }
 
