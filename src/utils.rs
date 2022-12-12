@@ -1256,6 +1256,16 @@ impl <'a, T> Iterator for DriveIter<'a, T> {
     }
 }
 
+pub trait ToDebugString {
+    fn to_debug_string(&self) -> String;
+}
+
+impl <T> ToDebugString for T where T: std::fmt::Debug {
+    fn to_debug_string(&self) -> String {
+        format!("{:?}", &self)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
