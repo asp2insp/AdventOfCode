@@ -10,39 +10,51 @@ use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
-
 /// Run an A* algorithm over the given search space.
 /// Takes a start state, a heuristic function to rank search candidates,
 /// an expand function to find neighbors, and finally a done predicate.
 /// TODO expand to track path and reconstruct.
-pub fn a_star<S, D, H, E>(start: S, heuristic: H, expand: E, done: D) -> Option<isize> //(isize, Vec<S>) 
-    where S: Clone + Hash + Eq, D: Fn(&S) -> bool, H: Fn(&S) -> isize, E: Fn(S) -> Vec<(S, isize)> {
-        let mut cost = FnvHashMap::default();
-        cost.insert(start.clone(), 0isize);
-        let mut q = vec![start];
-        while let Some(next) = q.pop() {
-            let curr_cost = *cost.get(&next).unwrap();
-            if done(&next) {
-                return Some(curr_cost)
-            }
-            for (neighbor, step_cost) in expand(next) {
-                let cost_e = cost.entry(neighbor.clone()).or_insert(isize::MAX);
-                if step_cost + curr_cost < *cost_e {
-                    *cost_e = step_cost + curr_cost;
-                    q.push(neighbor);
-                }
-            }
-            q.sort_by_cached_key(|e| cost.get(&e).unwrap_or(&isize::MAX).saturating_add(heuristic(e)));
-            q.reverse();
+pub fn a_star<S, D, H, E>(start: S, heuristic: H, expand: E, done: D) -> Option<isize>
+//(isize, Vec<S>)
+where
+    S: Clone + Hash + Eq,
+    D: Fn(&S) -> bool,
+    H: Fn(&S) -> isize,
+    E: Fn(S) -> Vec<(S, isize)>,
+{
+    let mut cost = FnvHashMap::default();
+    cost.insert(start.clone(), 0isize);
+    let mut q = vec![start];
+    while let Some(next) = q.pop() {
+        let curr_cost = *cost.get(&next).unwrap();
+        if done(&next) {
+            return Some(curr_cost);
         }
-        // We can't find a path
-        return None;
+        for (neighbor, step_cost) in expand(next) {
+            let cost_e = cost.entry(neighbor.clone()).or_insert(isize::MAX);
+            if step_cost + curr_cost < *cost_e {
+                *cost_e = step_cost + curr_cost;
+                q.push(neighbor);
+            }
+        }
+        q.sort_by_cached_key(|e| {
+            cost.get(&e)
+                .unwrap_or(&isize::MAX)
+                .saturating_add(heuristic(e))
+        });
+        q.reverse();
+    }
+    // We can't find a path
+    return None;
 }
 
-pub fn flatten<T, Outer, Inner>(a: Outer) -> impl Iterator<Item=T> 
-    where Outer: IntoIterator<Item=Inner>, Inner: IntoIterator<Item=T> {
-        a.into_iter().flat_map(IntoIterator::into_iter)
-    }
+pub fn flatten<T, Outer, Inner>(a: Outer) -> impl Iterator<Item = T>
+where
+    Outer: IntoIterator<Item = Inner>,
+    Inner: IntoIterator<Item = T>,
+{
+    a.into_iter().flat_map(IntoIterator::into_iter)
+}
 
 pub trait IterUtils: Iterator {
     fn counting_set(self) -> FnvHashMap<Self::Item, usize>
@@ -73,7 +85,10 @@ pub fn flip<T, U>((a, b): (T, U)) -> (U, T) {
 }
 
 // Take an MxN matrix and return an NxM one with transposed contents
-pub fn transpose<T>(v: &Vec<Vec<T>>) -> Vec<Vec<T>> where T: Copy + Default {
+pub fn transpose<T>(v: &Vec<Vec<T>>) -> Vec<Vec<T>>
+where
+    T: Copy + Default,
+{
     let m = v.len();
     let n = v[0].len();
     let mut ret = vec![vec![Default::default(); m]; n];
@@ -167,7 +182,7 @@ pub struct CharSet {
 
 impl CharSet {
     pub fn new() -> Self {
-        CharSet {inner: 0}
+        CharSet { inner: 0 }
     }
 
     fn conv(c: char) -> u64 {
@@ -184,7 +199,7 @@ impl CharSet {
         if u >= 60 {
             '\0'
         } else if u < 27 {
-            char::from_u32( (u + 65) as u32).unwrap()
+            char::from_u32((u + 65) as u32).unwrap()
         } else {
             char::from_u32((u - 27 + 97) as u32).unwrap()
         }
@@ -227,7 +242,7 @@ impl CharSet {
     // Calculates this - other
     pub fn subtract(&self, other: &CharSet) -> CharSet {
         CharSet {
-            inner: self.inner & !other.inner
+            inner: self.inner & !other.inner,
         }
     }
 
@@ -266,7 +281,7 @@ fn char_set() {
     assert_eq!(false, s.insert('B'));
     assert!(s.insert('c'));
 
-    assert_eq!(true, s.contains('A'));  
+    assert_eq!(true, s.contains('A'));
     assert_eq!(true, s.contains('B'));
     assert_eq!(true, s.contains('c'));
 
@@ -492,14 +507,15 @@ pub fn gimme_usizes_once(l: &str) -> Vec<usize> {
     use regex::*;
     let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
     re.captures_iter(l.trim())
-                .map(|c| parse!(c[1], usize))
-                .collect::<Vec<usize>>()
+        .map(|c| parse!(c[1], usize))
+        .collect::<Vec<usize>>()
 }
 
-pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item=&'a str>) -> Vec<Vec<isize>> {
+pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item = &'a str>) -> Vec<Vec<isize>> {
     use regex::*;
     let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
-    lines.map(|l| {
+    lines
+        .map(|l| {
             re.captures_iter(l.trim())
                 .map(|c| parse!(c[1], isize))
                 .collect::<Vec<isize>>()
@@ -534,7 +550,6 @@ pub fn gimme_chunks(s: &str) -> Vec<Vec<&str>> {
     ret.push(curr);
     ret
 }
-
 
 fn free_neighbors_bounded(p: Point, bounds: Option<(isize, isize, isize, isize)>) -> Vec<Point> {
     veci![
@@ -976,7 +991,7 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn drive_iter<'a>(&'a self, p: Point, d: Direction) -> impl Iterator<Item=Point> + 'a {
+    pub fn drive_iter<'a>(&'a self, p: Point, d: Direction) -> impl Iterator<Item = Point> + 'a {
         DriveIter {
             dir: d,
             curr: Some(p),
@@ -1244,7 +1259,7 @@ struct DriveIter<'a, T> {
     g: &'a Grid<T>,
 }
 
-impl <'a, T> Iterator for DriveIter<'a, T> {
+impl<'a, T> Iterator for DriveIter<'a, T> {
     type Item = Point;
     fn next(&mut self) -> Option<Point> {
         if let Some(p) = self.curr {
@@ -1260,15 +1275,107 @@ pub trait ToDebugString {
     fn to_debug_string(&self) -> String;
 }
 
-impl <T> ToDebugString for T where T: std::fmt::Debug {
+impl<T> ToDebugString for T
+where
+    T: std::fmt::Debug,
+{
     fn to_debug_string(&self) -> String {
         format!("{:?}", &self)
+    }
+}
+
+pub trait Traversible<T> {
+    fn idx(self, _: T) -> usize;
+}
+
+impl <T, C> Traversible<T> for C where C: IntoIterator<Item=T>, T: Eq {
+    fn idx(self, needle: T) -> usize {
+        self.into_iter().position(|e| e == needle).unwrap()
+    }
+}
+
+/// Split off the next matched sub-chunk and return the remainder
+/// Sub chunk will be demarkated by either a matched (nested) set of braces
+/// or a single item delimiter
+pub fn get_matched_chunk<'a>(
+    c: &'a [char],
+    braces: Option<(char, char)>,
+    single: Option<char>,
+) -> (&'a [char], &'a [char]) {
+    let mut split = 0;
+    let mut depth = 0;
+    while split < c.len() {
+        match (c[split], braces, single) {
+            (a, _, Some(cs)) if a == cs && depth == 0 => return (&c[..split], &c[split + 1..]), // Trim the separator
+            (a, Some((lb, rb)), _) if a == lb => depth += 1, // go down a level
+            (a, Some((lb, rb)), None) if depth == 1 && a == rb => return c.split_at(split + 1),
+            (a, Some((lb, rb)), Some(cs))
+                if depth == 1 && a == rb && c.len() > split + 1 && c[split + 1] == cs =>
+            {
+                return (&c[..split + 1], &c[split + 2..])
+            }
+            (a, Some((lb, rb)), _) if a == rb => depth -= 1,
+            (a, _, _) => {} // continue to collect
+            sum => unreachable!("{:?}", sum),
+        };
+        split += 1;
+    }
+    (c, &[])
+}
+
+pub trait ToCharArray {
+    fn to_char_array<'a>(&'a self) -> Vec<char>;
+}
+
+impl ToCharArray for String {
+    fn to_char_array<'a>(&'a self) -> Vec<char> {
+        self.chars().collect_vec()
+    }
+}
+
+impl ToCharArray for &str {
+    fn to_char_array<'a>(&'a self) -> Vec<char> {
+        self.chars().collect_vec()
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_split() {
+        assert_eq!(
+            &['a'],
+            get_matched_chunk(&"a,b".to_char_array(), None, Some(',')).0
+        );
+        assert_eq!(
+            &['(', ')'],
+            get_matched_chunk(&"(),".to_char_array(), Some(('(', ')')), None).0
+        );
+        assert_eq!(
+            &['(', ')'],
+            get_matched_chunk(&"(),".to_char_array(), Some(('(', ')')), Some(',')).0
+        );
+        assert_eq!(
+            "[[a]]".to_char_array(),
+            get_matched_chunk(&"[[a]],".to_char_array(), Some(('[', ']')), None).0
+        );
+        assert_eq!(
+            "[[a]]".to_char_array(),
+            get_matched_chunk(&"[[a]],".to_char_array(), Some(('[', ']')), Some(',')).0
+        );
+
+        assert_eq!(
+            "[[a,b,c],[d],[[]]]".to_char_array(),
+            get_matched_chunk(
+                &"[[a,b,c],[d],[[]]],[]".to_char_array(),
+                Some(('[', ']')),
+                Some(',')
+            )
+            .0
+        );
+    }
 
     const EX1: &'static str = r"#############
 #.|.|.|.|.|.#
