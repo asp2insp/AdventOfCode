@@ -774,6 +774,14 @@ impl<T> Grid<T> {
         }
     }
 
+    pub fn add_wall(&mut self, p: Point, t: T) -> &mut Self {
+        self.set(p, self.wall_char, t);
+        if let Some(wc) = &mut self.wall_cache {
+            wc[p.x as usize][p.y as usize] = true;
+        }
+        self
+    }
+
     pub fn add_other(&mut self, other: &Grid<T>, d: Direction)
     where
         T: Clone,
