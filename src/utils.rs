@@ -342,6 +342,46 @@ impl P3 {
         (self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)
     }
 
+    pub fn offset(&self, x: isize, y: isize, z: isize) -> P3 {
+        P3 {
+            x: self.x + x,
+            y: self.y + y,
+            z: self.z + z,
+        }
+    }
+
+    pub fn neighbors(&self) -> Vec<P3> {
+        vec![
+            self.offset(-1, 0, 0),
+            self.offset(1, 0, 0),
+            self.offset(0, -1, 0),
+            self.offset(0, 1, 0),
+            self.offset(0, 0, -1),
+            self.offset(0, 0, 1),
+        ]
+    }
+
+    pub fn neighbors_with_diagonals(&self) -> Vec<P3> {
+        let mut v = self.neighbors();
+        v.extend(vec![
+            self.offset(-1, -1, -1),
+            self.offset(1, 1, -1),
+            self.offset(-1, 1, -1),
+            self.offset(1, -1, -1),
+
+            self.offset(-1, -1, 0),
+            self.offset(1, 1, 0),
+            self.offset(-1, 1, 0),
+            self.offset(1, -1, 0),
+
+            self.offset(-1, -1, 1),
+            self.offset(1, 1, 1),
+            self.offset(-1, 1, 1),
+            self.offset(1, -1, 1),
+        ]);
+        v
+    }
+
     pub fn rotate_90_around_axis(&self, axis: char) -> P3 {
         match axis {
             'x' => P3 {
