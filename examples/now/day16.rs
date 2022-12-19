@@ -1,10 +1,10 @@
 use aoc::dict;
-use fnv::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 use itertools::Itertools;
 use rayon::prelude::IntoParallelIterator;
+use rayon::prelude::*;
 use regex::*;
 use smallstr::SmallString;
-use rayon::prelude::*;
 
 type S = SmallString<[u8; 2]>;
 
@@ -49,6 +49,7 @@ fn most_pressure(
     loc: S,
     open: Vec<S>,
     map: &FnvHashMap<S, Valve>,
+    targets: &FnvHashSet<S>,
     memo: &mut FnvHashMap<(usize, S, Vec<S>), usize>,
 ) -> usize {
     if let Some(ret) = memo.get(&(time, loc.clone(), open.clone())) {
@@ -70,13 +71,13 @@ fn most_pressure(
         v.tunnels.iter().for_each(|t| {
             possibles.push((t.clone(), open.clone()));
         });
-        if v.rate > 0 && !open.contains(&loc) {
+        if targets.contains(&loc) && v.rate > 0 && !open.contains(&loc) {
             possibles.push((loc.clone(), clone_with(&open, &loc)));
         }
     }
     let ret = possibles
         .into_iter()
-        .map(|(l, o)| most_pressure(time - 1, l, o, map, memo) + this_minute)
+        .map(|(l, o)| most_pressure(time - 1, l, o, map, targets, memo) + this_minute)
         .max()
         .unwrap_or(0);
     memo.insert((time, loc, open), ret);
@@ -87,127 +88,35 @@ pub fn part1(input: String) -> String {
     let valves = parse(&input);
     // println!("Start: {:?}", valves.get(&"AA".to_owned()));
     // Dynamic problem. Primary axis is minute, state space is location, valves open
-    most_pressure(30, SmallString::from("AA"), vec![], &valves, &mut dict! {}).to_string()
+    most_pressure(
+        30,
+        SmallString::from("AA"),
+        vec![],
+        &valves,
+        &valves.keys().cloned().collect::<FnvHashSet<S>>(),
+        &mut dict! {},
+    )
+    .to_string()
 }
-
-fn replace_with<T>(v: &Vec<T>, f: &T, t: &T) -> Vec<T>
-where
-    T: Ord + Clone,
-{
-    let mut r = v.clone();
-	if &r[0] == f {
-		r[0] = t.clone();
-	} else if &r[1] == f {
-		r[1] = t.clone();
-	}
-	r
-}
-
-fn most_pressure2(
-    time: usize,
-    locs: Vec<S>,
-    open: Vec<S>,
-    map: &FnvHashMap<S, Valve>,
-    memo: &mut FnvHashMap<(usize, Vec<S>, Vec<S>), usize>,
-) -> usize {
-    if let Some(ret) = memo.get(&(time, locs.clone(), open.clone())) {
-        return *ret;
-    }
-    let this_minute = open
-        .iter()
-        .filter_map(|n| map.get(n))
-        .map(|v| v.rate)
-        .sum::<usize>();
-    if time == 1 {
-        // Last minute, just the presure of what's done
-        return this_minute;
-    }
-
-    let mut possibles = vec![];
-	let mv = map.get(&locs[0]).unwrap();
-	mv.tunnels.iter().for_each(|t| {
-		possibles.push((replace_with(&locs, &locs[0], t), open.clone()));
-	});
-	if mv.rate > 0 && !open.contains(&locs[0]) {
-		possibles.push((locs.clone(), clone_with(&open, &locs[0])));
-	}
-
-	let ev = map.get(&locs[1]).unwrap();
-	let mut possibles2 = vec![];
-	for p in possibles.into_iter() {
-		ev.tunnels.iter().for_each(|t| {
-			possibles2.push((replace_with(&p.0, &locs[1], t), p.1.clone()));
-		});
-		if ev.rate > 0 && !p.1.contains(&locs[1]) {
-			possibles2.push((p.0.clone(), clone_with(&p.1, &locs[1])));
-		}
-	}
-	possibles2.sort();
-	possibles2.dedup();
-
-    let ret = possibles2
-        .into_iter()
-        .map(|(l, o)| most_pressure2(time - 1, l, o, map, memo) + this_minute)
-        .max()
-        .unwrap_or(0);
-    memo.insert((time, locs, open), ret);
-    ret
-}
-
-
 
 pub fn part2(input: String) -> String {
     let valves = parse(&input);
-    // println!("Start: {:?}", valves.get(&"AA".to_owned()));
-    // Dynamic problem. Primary axis is minute, state space is location, elephant loc, valves open
-    println!("{:?}", build_adj_list(&valves));
-
-    let starts = valves.get(&SmallString::from("AA")).unwrap().tunnels.clone();
-    let starts = starts.iter().cartesian_product(starts.iter()).collect_vec();
-    starts.into_par_iter()
-        .map(|ss| {
-            most_pressure2(
-                25,
-                vec![ss.0.clone(), ss.1.clone()],
-                vec![],
-                &valves,
-                &mut dict! {},
-            )
+    let valvuable = valves
+        .iter()
+        .filter_map(|(k, v)| if v.rate > 0 { Some(k.clone()) } else { None })
+        .collect::<FnvHashSet<S>>();
+    let partitions = valvuable.clone().into_iter().powerset().collect_vec();
+    partitions
+        .into_par_iter()
+        .map(|p0| {
+            let t0 = p0.into_iter().collect::<FnvHashSet<S>>();
+            let t1 = valvuable.difference(&t0).cloned().collect::<FnvHashSet<S>>();
+            most_pressure(26, "AA".into(), vec![], &valves, &t0, &mut dict!())
+                + most_pressure(26, "AA".into(), vec![], &valves, &t1, &mut dict!())
         })
         .max()
         .unwrap()
         .to_string()
-}
-
-fn build_adj_list(map: &FnvHashMap<S, Valve>) -> Vec<(S, S, usize)> {
-    let mut r = vec![];
-    for (n, v) in map {
-        for t in &v.tunnels {
-            r.push((n.clone(), t.clone(), 1));
-        }
-    }
-    let zeros = map.keys().filter(|&k| map.get(k).unwrap().rate == 0).collect_vec();
-    for z in zeros {
-        let mut rnew = vec![];
-        let adjs = r.iter().filter(|(f, _, _)| f == z).cloned().collect_vec();
-        for row in r.into_iter() {
-            if row.0 == *z {
-                continue;
-            } else if row.1 == *z {
-                for a in &adjs {
-                    if row.0 != a.1 {
-                        rnew.push((row.0.clone(), a.1.clone(), row.2 + a.2));
-                    }
-                }
-            } else {
-                rnew.push(row);
-            }
-        }
-        rnew.sort();
-        rnew.dedup_by_key(|r| (r.0.clone(), r.1.clone()));
-        r = rnew;
-    }
-    r
 }
 
 #[test]
@@ -224,5 +133,5 @@ fn test1() {
 	Valve JJ has flow rate=21; tunnel leads to valve II"#
         .to_owned();
     assert_eq!("1651", part1(s.clone()));
-	assert_eq!("1707", part2(s));
+    assert_eq!("1707", part2(s));
 }
