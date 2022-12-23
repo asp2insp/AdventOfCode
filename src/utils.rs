@@ -628,6 +628,55 @@ impl Direction {
             _ => Err(()),
         }
     }
+
+    pub fn turn(&self, lr: char) -> Direction {
+        use Direction::*;
+
+        match (self, lr) {
+            (N, 'L') => W,
+            (N, 'R') => E,
+            (S, 'L') => E,
+            (S, 'R') => W,
+            (E, 'L') => N,
+            (E, 'R') => S,
+            (W, 'L') => S,
+            (W, 'R') => N,
+            _ => unimplemented!(),
+        }
+    }
+    
+    pub fn opposite(&self) -> Direction {
+        use Direction::*;
+
+        match &self {
+            N => S,
+            S => N,
+            E => W,
+            W => E,
+        }
+    }
+
+    pub fn x_offset(&self) -> isize {
+        use Direction::*;
+
+        match &self {
+            N => 0,
+            S => 0,
+            E => 1,
+            W => -1,
+        }
+    }
+
+    pub fn y_offset(&self) -> isize {
+        use Direction::*;
+
+        match &self {
+            N => 1,
+            S => -1,
+            E => 0,
+            W => 0,
+        }
+    }
 }
 
 impl FromStr for Direction {
@@ -684,6 +733,13 @@ impl Point {
         }
     }
 
+    pub fn offset_dir(&self, d: Direction) -> Self {
+        Point {
+            x: self.x + d.x_offset(),
+            y: self.y + d.y_offset(),
+        }
+    }
+
     // manhattan distance
     pub fn dist(&self, other: &Point) -> isize {
         self.x.abs_diff(other.x) as isize + self.y.abs_diff(other.y) as isize
@@ -736,6 +792,27 @@ impl<T> Grid<T> {
         let mut m = default_map();
         for (li, l) in s.lines().rev().enumerate() {
             for (ci, c) in l.trim().chars().enumerate() {
+                m.insert(Point::from((ci, li)), (c, f(c)));
+            }
+        }
+        let mut g = Grid {
+            map: m,
+            ..Default::default()
+        };
+        let (l, b, r, t) = g.get_bounds();
+        Grid {
+            left_bound: l,
+            bottom_bound: b,
+            right_bound: r,
+            top_bound: t,
+            ..g
+        }
+    }
+
+    pub fn new_preserving_whitespace(s: &str, f: impl Fn(char) -> T) -> Grid<T> {
+        let mut m = default_map();
+        for (li, l) in s.lines().rev().enumerate() {
+            for (ci, c) in l.chars().enumerate() {
                 m.insert(Point::from((ci, li)), (c, f(c)));
             }
         }
@@ -901,6 +978,13 @@ impl<T> Grid<T> {
             top = max(top, *y);
         }
         (left, bottom, right, top)
+    }
+
+    pub fn clear_bounds(&mut self) {
+        self.left_bound = 0;
+        self.right_bound = 0;
+        self.top_bound = 0;
+        self.bottom_bound = 0;
     }
 
     pub fn get(&self, p: Point) -> Option<&(char, T)> {
@@ -1277,6 +1361,22 @@ impl<T> Grid<T> {
         }
         res
     }
+
+    pub fn to_string_windowed(&self, (l, b, r, t): (isize, isize, isize, isize)) -> String {
+        let mut f = String::new();
+        for line_no in (b..=t).rev() {
+            f.push_str(&(l..=r)
+            .map(|col_no| self
+                .get(Point::from((col_no, line_no)))
+                .map(|ct| ct.0)
+                .unwrap_or(' '))
+            .collect::<String>());
+            if line_no != b {
+                f.push('\n');
+            }
+        }
+        f
+    }
 }
 
 impl<T> fmt::Display for Grid<T> {
@@ -1330,6 +1430,14 @@ where
     fn to_debug_string(&self) -> String {
         format!("{:?}", &self)
     }
+}
+
+pub fn string_window(s: &str, left: usize, right: usize, dist_from_top: usize, num: usize) -> String {
+    s.lines()
+        .skip(dist_from_top)
+        .take(num)
+        .map(|l| l.chars().skip(left).take(right-left).collect::<String>())
+        .join("\n")
 }
 
 pub trait Traversible<T> {

@@ -11,5 +11,5 @@ echo -e "pub fn part2(input: String) -> String {\n\t\"part2\".to_string()\n}" >>
 touch input/now/day$1;
 sed -i "s/(day..\?)/(day$1)/" examples/now/main.rs
 
-code examples/now/day$1.rs
-code input/now/day$1
+#code examples/now/day$1.rs
+#code input/now/day$1
