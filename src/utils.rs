@@ -368,12 +368,10 @@ impl P3 {
             self.offset(1, 1, -1),
             self.offset(-1, 1, -1),
             self.offset(1, -1, -1),
-
             self.offset(-1, -1, 0),
             self.offset(1, 1, 0),
             self.offset(-1, 1, 0),
             self.offset(1, -1, 0),
-
             self.offset(-1, -1, 1),
             self.offset(1, 1, 1),
             self.offset(-1, 1, 1),
@@ -644,7 +642,7 @@ impl Direction {
             _ => unimplemented!(),
         }
     }
-    
+
     pub fn opposite(&self) -> Direction {
         use Direction::*;
 
@@ -1365,12 +1363,15 @@ impl<T> Grid<T> {
     pub fn to_string_windowed(&self, (l, b, r, t): (isize, isize, isize, isize)) -> String {
         let mut f = String::new();
         for line_no in (b..=t).rev() {
-            f.push_str(&(l..=r)
-            .map(|col_no| self
-                .get(Point::from((col_no, line_no)))
-                .map(|ct| ct.0)
-                .unwrap_or(' '))
-            .collect::<String>());
+            f.push_str(
+                &(l..=r)
+                    .map(|col_no| {
+                        self.get(Point::from((col_no, line_no)))
+                            .map(|ct| ct.0)
+                            .unwrap_or(' ')
+                    })
+                    .collect::<String>(),
+            );
             if line_no != b {
                 f.push('\n');
             }
@@ -1432,11 +1433,17 @@ where
     }
 }
 
-pub fn string_window(s: &str, left: usize, right: usize, dist_from_top: usize, num: usize) -> String {
+pub fn string_window(
+    s: &str,
+    left: usize,
+    right: usize,
+    dist_from_top: usize,
+    num: usize,
+) -> String {
     s.lines()
         .skip(dist_from_top)
         .take(num)
-        .map(|l| l.chars().skip(left).take(right-left).collect::<String>())
+        .map(|l| l.chars().skip(left).take(right - left).collect::<String>())
         .join("\n")
 }
 
@@ -1444,7 +1451,11 @@ pub trait Traversible<T> {
     fn idx(self, _: T) -> usize;
 }
 
-impl <T, C> Traversible<T> for C where C: IntoIterator<Item=T>, T: Eq {
+impl<T, C> Traversible<T> for C
+where
+    C: IntoIterator<Item = T>,
+    T: Eq,
+{
     fn idx(self, needle: T) -> usize {
         self.into_iter().position(|e| e == needle).unwrap()
     }

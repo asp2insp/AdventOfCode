@@ -9,7 +9,6 @@ pub mod macros;
 
 pub mod utils;
 
-
 pub fn get_input(mod_name: &str) -> String {
     let path = format!("input/now/{}", mod_name);
     let mut f = File::open(path).unwrap();
@@ -47,4 +46,3 @@ macro_rules! run_day {
 }
 
 // run_day!(day19);
-

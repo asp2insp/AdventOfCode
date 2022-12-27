@@ -63,10 +63,10 @@ macro_rules! make_ord {
                 Some(self.cmp(other))
             }
         }
-        
+
         impl std::cmp::Ord for $t {
             fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-                (|$this: &Self, $other: &Self| {$body})(self, other)
+                (|$this: &Self, $other: &Self| $body)(self, other)
             }
         }
     };
@@ -74,7 +74,12 @@ macro_rules! make_ord {
 
 #[test]
 fn test_dict() {
-    use itertools::*;
     use fnv::FnvHashMap;
-    assert_eq!((0..3).zip(['a', 'b', 'c']).collect::<FnvHashMap<usize, char>>(), dict!{0 => 'a', 1 => 'b', 2 => 'c'});
+    use itertools::*;
+    assert_eq!(
+        (0..3)
+            .zip(['a', 'b', 'c'])
+            .collect::<FnvHashMap<usize, char>>(),
+        dict! {0 => 'a', 1 => 'b', 2 => 'c'}
+    );
 }
