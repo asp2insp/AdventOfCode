@@ -738,6 +738,16 @@ impl Point {
         }
     }
 
+    pub fn dir_rel_to(&self, other: &Point) -> Direction {
+        match (self.x - other.x, self.y - other.y) {
+            (x, 0) if x < 0 => Direction::W,
+            (x, 0) if x > 0 => Direction::E,
+            (0, y) if y < 0 => Direction::S,
+            (0, y) if y > 0 => Direction::N,
+            _ => unimplemented!(),
+        }
+    }
+
     // manhattan distance
     pub fn dist(&self, other: &Point) -> isize {
         self.x.abs_diff(other.x) as isize + self.y.abs_diff(other.y) as isize
@@ -1002,7 +1012,7 @@ impl<T> Grid<T> {
     }
 
     pub fn read_pt(&self, p: &Point) -> char {
-        self.map.get(p).unwrap().0
+        self.map.get(p).expect(&format!("{:?} not in grid", p)).0
     }
 
     pub fn get_mut(&mut self, p: Point) -> Option<&mut (char, T)> {
@@ -1026,6 +1036,10 @@ impl<T> Grid<T> {
             self.map.insert(pfrom, to);
             self.map.insert(pto, from);
         }
+    }
+
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item=(Point, char, &'a T)> {
+        self.map.iter().map(|(xy, ct)| (*xy, ct.0, &ct.1))
     }
 
     pub fn iter_contents<'a>(&'a self) -> impl Iterator<Item = (Point, &'a T)> {
