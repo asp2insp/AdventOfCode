@@ -41,6 +41,19 @@ impl Computer {
         self.input.push_back(item);
     }
 
+    pub fn input_ascii(&mut self, prog: &[&str]) {
+        prog.iter()
+            .flat_map(|l| {
+                l.chars()
+                    .map(|c| c as u8 as isize)
+                    .chain(std::iter::once(10))
+            })
+            .for_each(|i| {
+                self.run_and_return_output();
+                self.input(i);
+            });
+    }
+
     pub fn set(&mut self, loc: usize, item: isize) {
         self.program[loc] = item;
     }

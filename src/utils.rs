@@ -1038,7 +1038,7 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item=(Point, char, &'a T)> {
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (Point, char, &'a T)> {
         self.map.iter().map(|(xy, ct)| (*xy, ct.0, &ct.1))
     }
 

@@ -1,4 +1,4 @@
-pub mod day20;
+pub mod day21;
 pub mod intcode;
 
 use std::fs::File;
@@ -16,11 +16,11 @@ pub fn get_input(mod_name: &str) -> String {
 
 pub fn main() {
     let args = std::env::args().skip(1).collect_vec();
-    let input = crate::get_input("twenty_nineteen/day20");
+    let input = crate::get_input("twenty_nineteen/day21");
     if args.contains(&"1".to_owned()) {
-        println!("1> {:?}", day20::part1(input.clone()));
+        println!("1> {:?}", day21::part1(input.clone()));
     }
     if args.contains(&"2".to_owned()) {
-        println!("2> {:?}", day20::part2(input.clone()));
+        println!("2> {:?}", day21::part2(input.clone()));
     }
 }

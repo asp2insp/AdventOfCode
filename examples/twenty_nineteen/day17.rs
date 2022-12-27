@@ -81,16 +81,7 @@ pub fn part2(input: String) -> String {
         "R,4,L,12,L,12,R,6",           // C
         "n",                 // Enable video
     ];
-    prog.iter()
-        .flat_map(|l| {
-            l.chars()
-                .map(|c| c as u8 as isize)
-                .chain(std::iter::once(10))
-        })
-        .for_each(|i| {
-            comp.run_and_return_output();
-            comp.input(i);
-        });
+    comp.input_ascii(&prog);
     let wait = std::time::Duration::from_millis(1);
     let mut alive = true;
     while alive {
@@ -99,5 +90,3 @@ pub fn part2(input: String) -> String {
     }
 	"part2".to_owned()
 }
-
-
