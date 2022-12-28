@@ -1046,6 +1046,10 @@ impl<T> Grid<T> {
         self.map.iter().map(|(xy, ct)| (*xy, &ct.1))
     }
 
+    pub fn all_pts(&self) -> Vec<Point> {
+        self.map.keys().cloned().collect::<Vec<Point>>()
+    }
+
     pub fn iter_chars(&self) -> impl Iterator<Item = (Point, char)> {
         self.map
             .iter()
@@ -1473,6 +1477,13 @@ where
     fn idx(self, needle: T) -> usize {
         self.into_iter().position(|e| e == needle).unwrap()
     }
+}
+
+pub fn concat<T, U, V>(u: U, v: V) -> Vec<T> where U: IntoIterator<Item=T>, V: IntoIterator<Item=T> {
+    let mut ret = Vec::new();
+    ret.extend(u);
+    ret.extend(v);
+    ret
 }
 
 /// Split off the next matched sub-chunk and return the remainder

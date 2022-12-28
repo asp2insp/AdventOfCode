@@ -17,7 +17,7 @@ pub fn part1(s: String) -> String {
         if l <= 128 {
             print!("{}", char::from_u32(l as u32).unwrap());
         } else {
-            return l.to_string()
+            return l.to_string();
         }
     }
     "No answer".to_owned()
@@ -33,12 +33,9 @@ pub fn part2(s: String) -> String {
         // J |= (~3) & 4
         "NOT C T", "AND D T", "OR T J",
         // For hole 2 away, jump if there's land 4 away, otherwise wait
-        "NOT B T", "AND D T", "OR T J",
-        // J &= 5 | 8
-        "AND C T", "OR E T", "OR H T", "AND T J",
-        // Jump if about to fall into hole
-        "NOT A T", "OR T J",
-        // Go
+        "NOT B T", "AND D T", "OR T J", // J &= 5 | 8
+        "AND C T", "OR E T", "OR H T", "AND T J", // Jump if about to fall into hole
+        "NOT A T", "OR T J", // Go
         "RUN",
     ];
     c.input_ascii(&prog);
@@ -46,7 +43,7 @@ pub fn part2(s: String) -> String {
         if l <= 128 {
             print!("{}", char::from_u32(l as u32).unwrap());
         } else {
-            return l.to_string()
+            return l.to_string();
         }
     }
     "No answer".to_owned()
