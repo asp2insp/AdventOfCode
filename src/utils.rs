@@ -549,6 +549,10 @@ pub fn gimme_usizes_once(l: &str) -> Vec<usize> {
         .collect::<Vec<usize>>()
 }
 
+pub fn is_digit(c: &char) -> bool {
+    *c >= '0' && *c <= '9'
+}
+
 pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item = &'a str>) -> Vec<Vec<isize>> {
     use regex::*;
     let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
