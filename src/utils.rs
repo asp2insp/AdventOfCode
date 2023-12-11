@@ -306,6 +306,45 @@ fn char_set() {
     assert_eq!("CharSet{Z,a,c}", s.sym_set_diff(&s2).to_string());
 }
 
+/// A better version of half-inclusive range (includes bottom but not top)
+/// supporting algebraic operations.
+pub struct BetterRange {
+    pub bottom: usize,
+    pub top: usize,
+}
+
+impl BetterRange {
+    pub fn new(bottom: usize, top: usize) -> BetterRange {
+        BetterRange { bottom, top }
+    }
+
+    pub fn new_from_length(bottom: usize, len: usize) -> BetterRange {
+        BetterRange {
+            bottom,
+            top: bottom + len,
+        }
+    }
+
+    pub fn includes(&self, i: usize) -> bool {
+        i >= self.bottom && i < self.top
+    }
+
+    pub fn intersection(&self, other: &BetterRange) -> Option<BetterRange> {
+        if self.bottom >= other.top || self.top <= other.bottom {
+            None
+        } else {
+            Some(BetterRange {
+                bottom: max(self.bottom, other.bottom),
+                top: min(self.top, other.top),
+            })
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.top - self.bottom
+    }
+}
+
 pub fn div_up(a: usize, b: usize) -> usize {
     (a + (b - 1)) / b
 }
