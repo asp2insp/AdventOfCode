@@ -1098,6 +1098,20 @@ impl<T> Grid<T> {
         })
     }
 
+    pub fn iter_range_rows(
+        &self,
+        xrange: Option<RangeInclusive<isize>>,
+        yrange: Option<RangeInclusive<isize>>,
+    ) -> impl Iterator<Item = (Point, char, &T)> {
+        let (l, bt, r, tp) = self.get_bounds();
+        let xrange = xrange.unwrap_or(l..=r);
+        let yrange = yrange.unwrap_or(bt..=tp);
+        yrange.cartesian_product(xrange).filter_map(|yx| {
+            self.get(Point::from((yx.1, yx.0)))
+                .map(|ct| (Point::from((yx.1, yx.0)), ct.0, &ct.1))
+        })
+    }
+
     pub fn for_each_mut(
         &mut self,
         xrange: Option<RangeInclusive<isize>>,
