@@ -1050,6 +1050,48 @@ impl<T> Grid<T> {
         }
     }
 
+    /// Insert a row at the given index, shifting all rows >= yidx by one.
+    pub fn insert_row(&mut self, yidx: isize, row_fill: impl Fn(Point) -> (char, T)) {
+        self.top_bound += 1;
+        let mut nmap = default_map();
+        std::mem::swap(&mut self.map, &mut nmap);
+        self.map = nmap
+            .into_iter()
+            .map(|(p, v)| {
+                if p.y >= yidx {
+                    (Point::new(p.x, p.y + 1), v)
+                } else {
+                    (p, v)
+                }
+            })
+            .chain(
+                (self.left_bound..=self.right_bound)
+                    .map(|x| (Point::new(x, yidx), row_fill(Point::new(x, yidx)))),
+            )
+            .collect();
+    }
+
+    /// Insert a col at the given index, shifting all cols >= xidx by one.
+    pub fn insert_col(&mut self, xidx: isize, col_fill: impl Fn(Point) -> (char, T)) {
+        self.right_bound += 1;
+        let mut nmap = default_map();
+        std::mem::swap(&mut self.map, &mut nmap);
+        self.map = nmap
+            .into_iter()
+            .map(|(p, v)| {
+                if p.x >= xidx {
+                    (Point::new(p.x + 1, p.y), v)
+                } else {
+                    (p, v)
+                }
+            })
+            .chain(
+                (self.bottom_bound..=self.top_bound)
+                    .map(|y| (Point::new(xidx, y), col_fill(Point::new(xidx, y)))),
+            )
+            .collect();
+    }
+
     pub fn read(&self, x: isize, y: isize) -> char {
         self.map.get(&Point::from((x, y))).unwrap().0
     }
@@ -1536,7 +1578,11 @@ where
     }
 }
 
-pub fn concat<T, U, V>(u: U, v: V) -> Vec<T> where U: IntoIterator<Item=T>, V: IntoIterator<Item=T> {
+pub fn concat<T, U, V>(u: U, v: V) -> Vec<T>
+where
+    U: IntoIterator<Item = T>,
+    V: IntoIterator<Item = T>,
+{
     let mut ret = Vec::new();
     ret.extend(u);
     ret.extend(v);

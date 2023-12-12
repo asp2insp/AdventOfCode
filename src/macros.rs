@@ -14,10 +14,12 @@ macro_rules! veci {
 #[macro_export]
 macro_rules! parse {
     ( $e:expr , $t:ty) => {
-        ($e).parse::<$t>().expect(format!("Failed to parse {}", &$e).as_ref())
+        ($e).parse::<$t>()
+            .expect(format!("Failed to parse {}", &$e).as_ref())
     };
     ( $e:expr ) => {
-        ($e).parse().expect(format!("Failed to parse {}", &$e).as_ref())
+        ($e).parse()
+            .expect(format!("Failed to parse {}", &$e).as_ref())
     };
 }
 

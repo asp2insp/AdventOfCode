@@ -1,5 +1,5 @@
-use aoc::utils::*;
 use crate::intcode::*;
+use aoc::utils::*;
 use itertools::Itertools;
 
 pub fn part1(s: String) -> String {
@@ -16,7 +16,6 @@ pub fn part1(s: String) -> String {
         line.clear();
     }
 }
-
 
 pub fn part2(s: String) -> String {
     "part2".to_owned()
