@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::atomic::{Ordering, AtomicUsize}};
+use std::collections::HashSet;
 
 use aoc::utils::*;
 use itertools::Itertools;
@@ -82,8 +82,8 @@ pub fn part2(input: String) -> String {
         r = drive_and_turn(r, &g);
     }
     let gc = g.clone();
-    let mut count = AtomicUsize::new(0);
-    g.for_each_mut(None, None, |p, (c, v)| {
+    let mut count = 0;
+    g.for_each_mut(None, None, |p, (c, _v)| {
         if seen.contains(&p) {
             return;
         }
@@ -97,17 +97,21 @@ pub fn part2(input: String) -> String {
                 '7' => -1,
                 'F' => 1,
                 'J' => 1,
+                'S' => 2,
                 _ => 0,
             })
             .sum::<i32>();
         if (winding_num / 2).is_odd() {
-            *c = 'I';//winding_num.to_string().chars().next().unwrap();
-			count.fetch_add(1, Ordering::SeqCst);
+            *c = 'I';
+			count += 1;
         }
     });
     println!("{}", g.to_string());
     count.to_debug_string()
 }
+
+#[cfg(test)]
+mod test {
 
 const INPUT: &str = r"..F7.
 .FJ|.
@@ -156,5 +160,7 @@ fn test_part2() {
     assert_eq!(part2(I3.to_string()), "4");
     assert_eq!(part2(I4.to_string()), "4");
 	assert_eq!(part2(I2.to_string()), "8");
+
+}
 
 }

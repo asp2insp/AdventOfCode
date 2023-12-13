@@ -1197,7 +1197,7 @@ impl<T> Grid<T> {
         &mut self,
         xrange: Option<RangeInclusive<isize>>,
         yrange: Option<RangeInclusive<isize>>,
-        f: impl Fn(Point, &mut (char, T)) -> (),
+        mut f: impl FnMut(Point, &mut (char, T)) -> (),
     ) {
         let (l, bt, r, tp) = self.get_bounds();
         let xrange = xrange.unwrap_or(l..=r);
