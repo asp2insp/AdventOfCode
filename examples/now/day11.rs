@@ -51,22 +51,10 @@ fn dist_with_interspersion(
     interspersion: isize,
 ) -> isize {
     (a.x.min(b.x)..a.x.max(b.x))
-        .map(|x| {
-            if cols.contains(&x) {
-                interspersion
-            } else {
-                1
-            }
-        })
+        .map(|x| if cols.contains(&x) { interspersion } else { 1 })
         .sum::<isize>()
         + (a.y.min(b.y)..a.y.max(b.y))
-            .map(|y| {
-                if rows.contains(&y) {
-                    interspersion
-                } else {
-                    1
-                }
-            })
+            .map(|y| if rows.contains(&y) { interspersion } else { 1 })
             .sum::<isize>()
 }
 
