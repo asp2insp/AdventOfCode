@@ -81,14 +81,44 @@ fn count_interpretations(row: &Row) -> usize {
 	count
 }
 
-fn rec_count_interpretations(chars: Vec<char>, groups: Vec<usize>, memo: &mut HashMap<(Vec<char>, Vec<usize>), usize>) -> usize {
-	if let Some(n) = memo.get((chars.clone(), groups.clone())) {
+fn dec_or_pop(g: &Vec<usize>) -> Vec<usize> {
+	match g.first().expect("empty vector") {
+		1 => g[1..].to_vec(),
+		_ => { let mut v = g.clone(); v[0] -= 1; v }
+	}
+}
+
+fn rec_count_interpretations<'a>(chars: &'a [char], groups: Vec<usize>, memo: &mut HashMap<(&'a [char], Vec<usize>), usize>) -> usize {
+	if let Some(n) = memo.get(&(chars, groups.clone())) {
 		return *n;
 	}
 	if chars.len() == 0 {
-		return 0;
+		if groups.len() == 0 {
+			return 1;
+		} else {
+			return 0;
+		}
 	}
+	let val: usize = if chars[0] == '.' {
+		rec_count_interpretations(&chars[1..], groups.clone(), memo)
+	} else if chars[0] == '#' {
+		if groups.len() == 0 {
+			0
+		} else {
+			rec_count_interpretations(&chars[1..], dec_or_pop(&groups), memo)
+		}
+	} else {
+		// chars[0] == '?'
+		// Either it's a . or a #
+		rec_count_interpretations(&chars[1..], groups.clone(), memo) + if groups.len() == 0 {
+			0
+		} else {
+			rec_count_interpretations(&chars[1..], dec_or_pop(&groups), memo)
+		}
 
+	};
+	memo.insert((chars, groups), val);
+	val
 }
 
 pub fn part1(input: String) -> String {
@@ -99,7 +129,11 @@ pub fn part1(input: String) -> String {
 
 pub fn part2(input: String) -> String {
     let rows = parse(&input);
-    let total = rows.par_iter().map(Row::unfold).map(|r| count_interpretations(&r)).sum::<usize>();
+    // let total = rows.par_iter().map(Row::unfold).map(|r| count_interpretations(&r)).sum::<usize>();
+	let total = rows.par_iter().map(|r| {
+		let mut memo = HashMap::new();
+		rec_count_interpretations(&r.data, r.groups.clone(), &mut memo)
+	}).sum::<usize>();
 	total.to_string()
 }
 

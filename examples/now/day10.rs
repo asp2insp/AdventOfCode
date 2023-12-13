@@ -106,7 +106,7 @@ pub fn part2(input: String) -> String {
 			count += 1;
         }
     });
-    println!("{}", g.to_string());
+    // println!("{}", g.to_string());
     count.to_debug_string()
 }
 
