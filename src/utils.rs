@@ -1197,14 +1197,14 @@ impl<T> Grid<T> {
         &mut self,
         xrange: Option<RangeInclusive<isize>>,
         yrange: Option<RangeInclusive<isize>>,
-        f: impl Fn(&mut (char, T)) -> (),
+        f: impl Fn(Point, &mut (char, T)) -> (),
     ) {
         let (l, bt, r, tp) = self.get_bounds();
         let xrange = xrange.unwrap_or(l..=r);
         let yrange = yrange.unwrap_or(bt..=tp);
         xrange.cartesian_product(yrange).for_each(|xy| {
             if let Some(ct) = self.map.get_mut(&Point::from(xy)) {
-                f(ct);
+                f(Point::from(xy), ct);
             }
         });
     }
@@ -1292,6 +1292,19 @@ impl<T> Grid<T> {
         ]
         .into_iter()
         .filter_map(|n| n)
+    }
+
+    pub fn neighbors_with_directions(&self, p: Point) -> impl Iterator<Item = (Direction, Point)> {
+        use Direction::*;
+
+        vec![
+            (N, self.drive(p, N)),
+            (S, self.drive(p, S)),
+            (E, self.drive(p, E)),
+            (W, self.drive(p, W)),
+        ]
+        .into_iter()
+        .flat_map(|(d, n)| n.map(|n| (d, n)))
     }
 
     fn neighbors_default(&self, p: Point) -> Vec<(Point, isize)> {
