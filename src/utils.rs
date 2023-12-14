@@ -22,6 +22,9 @@ pub fn munch<'a, 'b, T>(input: &'a [T], num: usize, okay: &'b [T], not: &'b [T])
     Some(&input[num..])
 }
 
+// TODO? munch seq
+// TODO? munch rep
+
 
 /// Run an A* algorithm over the given search space.
 /// Takes a start state, a heuristic function to rank search candidates,
@@ -933,7 +936,7 @@ impl<T> Grid<T> {
             left_bound: self.left_bound,
             right_bound: self.right_bound,
             top_bound: self.top_bound,
-            bottom_bound: self.top_bound,
+            bottom_bound: self.bottom_bound,
             wall_char: self.wall_char,
             floor_char: self.floor_char,
             wall_cache: None,
