@@ -10,6 +10,19 @@ use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
+pub fn munch<'a, 'b, T>(input: &'a [T], num: usize, okay: &'b [T], not: &'b [T]) -> Option<&'a [T]> where T: Eq {
+    for i in 0..num {
+        if i >= input.len() {
+            return None;
+        }
+        if !okay.contains(&input[i]) || not.contains(&input[i]) {
+            return None;
+        }
+    }
+    Some(&input[num..])
+}
+
+
 /// Run an A* algorithm over the given search space.
 /// Takes a start state, a heuristic function to rank search candidates,
 /// an expand function to find neighbors, and finally a done predicate.

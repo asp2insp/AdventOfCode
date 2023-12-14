@@ -1,6 +1,5 @@
-use aoc::utils::gimme_usizes_once;
+use aoc::utils::{gimme_usizes_once, munch};
 use itertools::{repeat_n, Itertools};
-use rayon::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -55,6 +54,11 @@ impl Row {
             groups: repeat_n(self.groups.clone(), 5).flatten().collect_vec(),
         }
     }
+
+	fn rc_count(self) -> usize {
+		let mut memo = HashMap::new();
+		rec_count_interpretations(&self.data, self.groups.clone(), &mut memo)
+	}
 }
 
 fn parse_row(l: &str) -> Row {
@@ -76,22 +80,10 @@ fn count_interpretations(row: &Row) -> usize {
     for i in 0..max {
         let test_row = row.apply_mask(i);
         if test_row.is_valid() {
-            // println!("{:?} is valid", test_row);
             count += 1;
         }
     }
     count
-}
-
-fn dec_or_pop(g: &Vec<usize>) -> Vec<usize> {
-    match g.first().expect("empty vector") {
-        1 => g[1..].to_vec(),
-        _ => {
-            let mut v = g.clone();
-            v[0] -= 1;
-            v
-        }
-    }
 }
 
 fn rec_count_interpretations<'a>(
@@ -99,9 +91,10 @@ fn rec_count_interpretations<'a>(
     groups: Vec<usize>,
     memo: &mut HashMap<(&'a [char], Vec<usize>), usize>,
 ) -> usize {
+	// println!("{:?} {:?}", chars, groups);
     if let Some(n) = memo.get(&(chars, groups.clone())) {
-        return *n;
-    }
+		return *n;
+	}
     if chars.len() == 0 {
         if groups.len() == 0 {
             return 1;
@@ -109,23 +102,45 @@ fn rec_count_interpretations<'a>(
             return 0;
         }
     }
-    let val: usize = if chars[0] == '.' {
-        rec_count_interpretations(&chars[1..], groups.clone(), memo)
+	let mut val = 0;
+    if chars[0] == '.' {
+		// Use the . with the same groups
+        val = rec_count_interpretations(&chars[1..], groups.clone(), memo);
     } else if chars[0] == '#' {
         if groups.len() == 0 {
-            0
+			// If we don't have any groups left, then this is invalid
+            return 0;
         } else {
-            rec_count_interpretations(&chars[1..], dec_or_pop(&groups), memo)
+			let mut groups_new = groups.clone();
+			let g = groups_new.remove(0);
+			if let Some(cnew) = munch(chars, g, &['#', '?'], &[]) {
+				if cnew.len() == 0 {
+					if groups_new.len() == 0 {
+						val += 1;
+					}
+				} else if let Some(cnew) = munch(cnew, 1, &['.', '?'], &[]) {
+					val += rec_count_interpretations(cnew, groups_new, memo);
+				}
+			}
         }
     } else {
-        // chars[0] == '?'
-        // Either it's a . or a #
-        rec_count_interpretations(&chars[1..], groups.clone(), memo)
-            + if groups.len() == 0 {
-                0
-            } else {
-                rec_count_interpretations(&chars[1..], dec_or_pop(&groups), memo)
-            }
+        // chars[0] == '?' Either it's a . or a #
+		// First count the ways it can be a .
+		val = rec_count_interpretations(&chars[1..], groups.clone(), memo);
+		// Then add the ways to count it as a # if possible
+		if groups.len() > 0 {
+			let mut groups_new = groups.clone();
+			let g = groups_new.remove(0);
+			if let Some(cnew) = munch(chars, g, &['#', '?'], &[]) {
+				if cnew.len() == 0 {
+					if groups_new.len() == 0 {
+						val += 1;
+					}
+				} else if let Some(cnew) = munch(cnew, 1, &['.', '?'], &[]) {
+					val += rec_count_interpretations(cnew, groups_new, memo);
+				}
+			}
+		}
     };
     memo.insert((chars, groups), val);
     val
@@ -133,20 +148,13 @@ fn rec_count_interpretations<'a>(
 
 pub fn part1(input: String) -> String {
     let rows = parse(&input);
-    let total = rows.par_iter().map(count_interpretations).sum::<usize>();
+    let total = rows.into_iter().map(Row::rc_count).sum::<usize>();
     total.to_string()
 }
 
 pub fn part2(input: String) -> String {
     let rows = parse(&input);
-    // let total = rows.par_iter().map(Row::unfold).map(|r| count_interpretations(&r)).sum::<usize>();
-    let total = rows
-        .par_iter()
-        .map(|r| {
-            let mut memo = HashMap::new();
-            rec_count_interpretations(&r.data, r.groups.clone(), &mut memo)
-        })
-        .sum::<usize>();
+    let total = rows.iter().map(Row::unfold).map(Row::rc_count).sum::<usize>();
     total.to_string()
 }
 
@@ -155,4 +163,13 @@ fn test_part_1() {
     assert_eq!(count_interpretations(&parse_row("???.### 1,1,3")), 1);
     assert_eq!(count_interpretations(&parse_row(".??..??...?##. 1,1,3")), 4);
     assert_eq!(count_interpretations(&parse_row("?###???????? 3,2,1")), 10);
+}
+
+#[test]
+fn test_part_2() {
+    assert_eq!(parse_row("???.### 1,1,3").rc_count(), 1);
+    assert_eq!(parse_row(".??..??...?##. 1,1,3").rc_count(), 4);
+    assert_eq!(parse_row("?###???????? 3,2,1").rc_count(), 10);
+	assert_eq!(parse_row(".??..??...?##. 1,1,3").unfold().rc_count(), 16384);
+	assert_eq!(parse_row("????.######..#####. 1,6,5").unfold().rc_count(), 2500);
 }
