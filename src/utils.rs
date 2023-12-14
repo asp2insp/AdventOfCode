@@ -10,21 +10,80 @@ use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
-pub fn munch<'a, 'b, T>(input: &'a [T], num: usize, okay: &'b [T], not: &'b [T]) -> Option<&'a [T]> where T: Eq {
+/// Try to consume a set of characters
+pub fn munch<'a, 'b, T>(
+    input: &'a [T],
+    num: usize,
+    okay: &'b [T],
+    not: &'b [T],
+) -> Option<(&'a [T], &'a [T])>
+where
+    T: Eq,
+{
     for i in 0..num {
         if i >= input.len() {
             return None;
         }
-        if !okay.contains(&input[i]) || not.contains(&input[i]) {
+        // If okay is set, use that first:
+        if !okay.is_empty() && !okay.contains(&input[i]) {
+            return None;
+        }
+        // Otherwise, exclude any characters from not:
+        if not.contains(&input[i]) {
             return None;
         }
     }
-    Some(&input[num..])
+    Some((&input[..num], &input[num..]))
 }
 
-// TODO? munch seq
-// TODO? munch rep
+pub fn munch_seq<'a, 'b, T>(
+    input: &'a [T],
+    seq: &'b [(usize, &'b [T], &'b [T])],
+) -> Option<(Vec<&'a [T]>, &'a [T])>
+where
+    T: Eq,
+{
+    let mut res = Vec::new();
+    let mut rest = input;
+    for (n, ok, not) in seq {
+        match munch(rest, *n, ok, not) {
+            Some((chunk, next)) => {
+                res.push(chunk);
+                rest = next;
+            }
+            None => return None,
+        };
+    }
+    Some((res, rest))
+}
 
+#[cfg(test)]
+mod munch_tests {
+    use super::*;
+
+    #[test]
+    fn test_munch() {
+        let arr = [1, 1, 2, 3];
+        assert_eq!(
+            munch(&arr, 3, &[1, 2], &[]),
+            Some(([1, 1, 2].as_slice(), [3].as_slice()))
+        );
+        assert_eq!(munch(&arr, 4, &[1, 2], &[]), None);
+        assert_eq!(munch(&arr, 3, &[], &[1]), None);
+    }
+
+    #[test]
+    fn test_munch_seq() {
+        let arr = [1, 1, 2, 3, 3, 3];
+        assert_eq!(
+            munch_seq(&arr, &[(3, &[1, 2], &[]), (3, &[], &[1, 2])]),
+            Some((
+                vec![[1, 1, 2].as_slice(), [3, 3, 3].as_slice()],
+                [].as_slice()
+            ))
+        );
+    }
+}
 
 /// Run an A* algorithm over the given search space.
 /// Takes a start state, a heuristic function to rank search candidates,

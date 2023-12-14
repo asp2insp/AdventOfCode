@@ -113,12 +113,12 @@ fn rec_count_interpretations<'a>(
         } else {
 			let mut groups_new = groups.clone();
 			let g = groups_new.remove(0);
-			if let Some(cnew) = munch(chars, g, &['#', '?'], &[]) {
+			if let Some((_, cnew)) = munch(chars, g, &['#', '?'], &[]) {
 				if cnew.len() == 0 {
 					if groups_new.len() == 0 {
 						val += 1;
 					}
-				} else if let Some(cnew) = munch(cnew, 1, &['.', '?'], &[]) {
+				} else if let Some((_, cnew)) = munch(cnew, 1, &['.', '?'], &[]) {
 					val += rec_count_interpretations(cnew, groups_new, memo);
 				}
 			}
@@ -131,12 +131,12 @@ fn rec_count_interpretations<'a>(
 		if groups.len() > 0 {
 			let mut groups_new = groups.clone();
 			let g = groups_new.remove(0);
-			if let Some(cnew) = munch(chars, g, &['#', '?'], &[]) {
+			if let Some((_, cnew)) = munch(chars, g, &['#', '?'], &[]) {
 				if cnew.len() == 0 {
 					if groups_new.len() == 0 {
 						val += 1;
 					}
-				} else if let Some(cnew) = munch(cnew, 1, &['.', '?'], &[]) {
+				} else if let Some((_, cnew)) = munch(cnew, 1, &['.', '?'], &[]) {
 					val += rec_count_interpretations(cnew, groups_new, memo);
 				}
 			}
