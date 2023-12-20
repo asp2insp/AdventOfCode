@@ -1,46 +1,12 @@
-use std::collections::HashMap;
+
 
 use aoc::utils::*;
 use itertools::Itertools;
 use regex::Regex;
 
-fn measure_area(g: &Grid<()>) -> usize {
-    let mut by_y = HashMap::new();
-    for (p, _) in g.iter_chars().filter(|(_, c)| *c == '#') {
-        by_y.entry(p.y).or_insert_with(Vec::new).push(p.x);
-    }
-    by_y.into_iter()
-        .map(|(_, mut v)| {
-            v.sort();
-            let mut sum = 0;
-            let mut inside = true;
-			let mut in_wall = false;
-            for (l, r) in v.iter().tuple_windows() {
-                if r - l == 1 {
-                    sum += 1;
-					in_wall = true;
-					continue
-                } else if inside {
-                    sum += r - l + 1;
-				}
-				if in_wall {
-					sum += 1;
-					in_wall = false;
-				} else {
-					inside = !inside;
-				}
-            }
-			if in_wall {
-				sum += 1;
-			}
-			println!("{:?} {}", v, sum);
-            sum
-        })
-        .sum::<isize>() as usize
-}
-
 pub fn part1(input: String) -> String {
-    let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.', ()));
+    let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.',()));
+    let mut v = vec![];
     g.clear_bounds();
     let mut p = Point::new(0, 0);
     for l in input.lines() {
@@ -53,17 +19,22 @@ pub fn part1(input: String) -> String {
             _ => panic!("Unknown direction"),
         };
         let dist = parts[1].parse::<i32>().unwrap();
+        v.push(p);
         for _ in 0..dist {
             p = g.drive(p, dir).unwrap();
             g.set(p, '#', ());
         }
     }
-    measure_area(&g).to_string()
+    v.push(p);
+    let ans = v.into_iter().tuple_windows().map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2)).sum::<isize>().abs() / 2 + 1;
+    ans.to_string()
+    // let inside = g.flood_search_by_pred(Point::new(1, 1), |pf, pt| g.get(pf).map(|c| c.0).unwrap_or('.') != '#' && g.get(pt).map(|c| c.0).unwrap_or('.') != '#').len();
+    // let outside = g.iter_chars().filter(|&(_, c)| c == '#').count();
+    // (inside + outside).to_string()
 }
 
 pub fn part2(input: String) -> String {
-    let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.', ()));
-    g.clear_bounds();
+    let mut v = vec![];
     let mut p = Point::new(0, 0);
     let re = Regex::new(r"([UDLR]) (\d+) \(#(\w+)\)").unwrap();
     for l in input.lines() {
@@ -77,23 +48,12 @@ pub fn part2(input: String) -> String {
             _ => panic!("Unknown direction"),
         };
         let dist = u32::from_str_radix(&parts.into_iter().take(5).join(""), 16).unwrap();
-        for _ in 0..dist {
-            p = g.drive(p, dir).unwrap();
-            g.set(p, '#', ());
-        }
+        v.push(p);
+        p = p.offset_dir_long(dir, dist as isize);
     }
-
-    measure_area(&g).to_string()
-}
-
-#[test]
-fn test_simple() {
-	let input = r"
-### ###
-# # # #
-#######
-";
-	assert_eq!(measure_area(&Grid::new(input, ())), 19);
+    v.push(p);
+    let ans = v.into_iter().tuple_windows().map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2) ).sum::<isize>().abs() / 2 + 1;
+    ans.to_string()
 }
 
 #[test]

@@ -856,6 +856,13 @@ impl Point {
         }
     }
 
+    pub fn offset_dir_long(&self, d: Direction, l: isize) -> Self {
+        Point {
+            x: self.x + d.x_offset() * l,
+            y: self.y + d.y_offset() * l,
+        }
+    }
+
     pub fn dir_rel_to(&self, other: &Point) -> Direction {
         match (self.x - other.x, self.y - other.y) {
             (x, 0) if x < 0 => Direction::W,
