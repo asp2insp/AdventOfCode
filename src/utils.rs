@@ -392,6 +392,7 @@ fn char_set() {
 
 /// A better version of half-inclusive range (includes bottom but not top)
 /// supporting algebraic operations.
+#[derive(Debug, Clone)]
 pub struct BetterRange {
     pub bottom: usize,
     pub top: usize,
@@ -426,6 +427,34 @@ impl BetterRange {
 
     pub fn len(&self) -> usize {
         self.top - self.bottom
+    }
+
+    pub fn max(&self, max: usize) -> BetterRange {
+        BetterRange {
+            bottom: self.bottom,
+            top: min(max, self.top),
+        }
+    }
+
+    pub fn min(&self, min: usize) -> BetterRange {
+        BetterRange {
+            bottom: max(min, self.bottom),
+            top: self.top,
+        }
+    }
+
+    pub fn restrict(&self, op: &str, val: usize) -> BetterRange {
+        match op {
+            "<" => self.max(val),
+            ">" => self.min(val+1),
+            "<=" => self.max(val+1),
+            ">=" => self.min(val),
+            _ => panic!("Invalid operator {}", op),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.bottom >= self.top
     }
 }
 
