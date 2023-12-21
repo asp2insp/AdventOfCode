@@ -26,17 +26,26 @@ macro_rules! run_day {
         fn main() {
             println!("Running {:?}...", stringify!($mod_name));
             let args: std::collections::HashSet<String> = std::env::args().skip(1).collect();
+            let do_time = args.contains("-t") || args.contains("--time");
+            let mut start_time = std::time::Instant::now();
             if args.contains("1") {
                 println!(
                     "1> {:?}",
                     $mod_name::part1(get_input(stringify!($mod_name)))
                 );
+                if do_time {
+                    println!("Part 1 took {} ms", start_time.elapsed().as_millis());
+                }
             }
             if args.contains("2") {
+                start_time = std::time::Instant::now();
                 println!(
                     "2> {:?}",
                     $mod_name::part2(get_input(stringify!($mod_name)))
                 );
+                if do_time {
+                    println!("Part 2 took {} ms", start_time.elapsed().as_millis());
+                }
             }
             if !args.contains("1") && !args.contains("2") {
                 println!("Specify part 1 or part 2");

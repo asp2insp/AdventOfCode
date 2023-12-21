@@ -5,6 +5,7 @@ use std::cell::Cell;
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
+use std::collections::BinaryHeap;
 use std::fmt;
 use std::hash::Hash;
 use std::ops::RangeInclusive;
@@ -85,8 +86,23 @@ mod munch_tests {
     }
 }
 
+use std::cmp::{Ordering, Ord, PartialOrd};
+
+#[derive(Eq, PartialEq, Hash, Clone)]
+struct State<S> (S, isize);
+impl <S> Ord for State<S> where S: Eq + PartialEq {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.1.cmp(&other.1).reverse()
+    }
+}
+impl <S> PartialOrd for State<S> where S: Eq + PartialEq {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.1.cmp(&other.1).reverse())
+    }
+}
+
 /// Run an A* algorithm over the given search space.
-/// Takes a start state, a heuristic function to rank search candidates,
+/// Takes a start state, a heuristic function to rank search candidates (lower is better),
 /// an expand function to find neighbors, and finally a done predicate.
 /// TODO expand to track path and reconstruct.
 pub fn a_star<S, D, H, E>(start: S, heuristic: H, expand: E, done: D) -> Option<isize>
@@ -99,9 +115,8 @@ where
 {
     let mut cost = FnvHashMap::default();
     cost.insert(start.clone(), 0isize);
-    let mut q = vec![start];
-    while let Some(next) = q.pop() {
-        let curr_cost = *cost.get(&next).unwrap();
+    let mut q: BinaryHeap<State<S>> = BinaryHeap::from(vec![State(start, 0)]);
+    while let Some(State(next, curr_cost)) = q.pop() {
         if done(&next) {
             return Some(curr_cost);
         }
@@ -109,15 +124,9 @@ where
             let cost_e = cost.entry(neighbor.clone()).or_insert(isize::MAX);
             if step_cost + curr_cost < *cost_e {
                 *cost_e = step_cost + curr_cost;
-                q.push(neighbor);
+                q.push(State(neighbor, *cost_e));
             }
         }
-        q.sort_by_cached_key(|e| {
-            cost.get(&e)
-                .unwrap_or(&isize::MAX)
-                .saturating_add(heuristic(e))
-        });
-        q.reverse();
     }
     // We can't find a path
     return None;
