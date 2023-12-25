@@ -129,22 +129,47 @@ struct RangePart {
 	s: BetterRange,
 }
 
+fn opposite(cmp: &str) -> String {
+	match cmp {
+		"<" => ">=",
+		">" => "<=",
+		_ => panic!("Unknown operator"),
+	}.to_string()
+}
+
 impl RangePart {
-	fn apply(&self, cmp: &str, val: usize, which: &str) -> RangePart {
+	fn apply(&self, cmp: &str, val: usize, which: &str) -> (RangePart, RangePart) {
 		let mut newpart = self.clone();
+		let mut leftover = self.clone();
 		match which {
-			"x" => newpart.x = newpart.x.restrict(cmp, val),
-			"m" => newpart.m = newpart.m.restrict(cmp, val),
-			"a" => newpart.a = newpart.a.restrict(cmp, val),
-			"s" => newpart.s = newpart.s.restrict(cmp, val),
+			"x" => {
+				newpart.x = newpart.x.restrict(cmp, val);
+				leftover.x = leftover.x.restrict(&opposite(cmp), val);
+			},
+			"m" => {
+				newpart.m = newpart.m.restrict(cmp, val);
+				leftover.m = leftover.m.restrict(&opposite(cmp), val);
+			},
+			"a" => {
+				newpart.a = newpart.a.restrict(cmp, val);
+				leftover.a = leftover.a.restrict(&opposite(cmp), val);
+			},
+			"s" => {
+				newpart.s = newpart.s.restrict(cmp, val);
+				leftover.s = leftover.s.restrict(&opposite(cmp), val);
+			},
 			"" => {},
 			_ => panic!("Unknown which {}", which),
 		};
-		newpart
+		(newpart, leftover)
 	}
 
 	fn is_valid(&self) -> bool {
 		!(self.x.is_empty() || self.m.is_empty() || self.a.is_empty() || self.s.is_empty())
+	}
+
+	fn combos(&self) -> usize {
+		self.x.len() * self.m.len() * self.a.len() * self.s.len()
 	}
 }
 
@@ -179,36 +204,33 @@ pub fn part2(input: String) -> String {
 	}
 
 	let mut rangers = vec![("in".to_owned(), RangePart {
-		x: BetterRange::new(0, usize::MAX),
-		m: BetterRange::new(0, usize::MAX),
-		a: BetterRange::new(0, usize::MAX),
-		s: BetterRange::new(0, usize::MAX),
+		x: BetterRange::new(1, 4001),
+		m: BetterRange::new(1, 4001),
+		a: BetterRange::new(1, 4001),
+		s: BetterRange::new(1, 4001),
 	})];
 
 	let mut accepted = vec![];
-	let mut state = "in".to_owned();
 	while !rangers.is_empty() {
-		rangers = rangers.into_iter().flat_map(|(state, rp)| {
-			// TODO this needs to be fold -- where the subsequent rule receives a modified RangePart that
-			// doesn't pass the first rule
-			rules.get(&state).unwrap().iter().filter_map(|(which, cmp, val, dest)| {
-				let newrp = rp.apply(cmp, *val, which);
+		rangers = rangers.into_iter().flat_map(|(state, mut rp)| {
+			let mut next = vec![];
+			for (which, cmp, val, dest) in rules.get(&state).unwrap().iter() {
+				let (newrp, leftover) = rp.apply(cmp, *val, which);
 				if newrp.is_valid() {
 					match dest {
-						Dest::Accept => {
-							accepted.push(newrp);
-							None
-						},
-						Dest::Reject => None,
-						Dest::Workflow(w) => Some((w.to_string(), newrp)),
+						Dest::Accept => accepted.push(newrp),
+						Dest::Reject => {},
+						Dest::Workflow(w) => next.push((w.to_string(), newrp)),
 					}
-				} else {
-					None
 				}
-			})
-			.collect_vec()
+				rp = leftover;
+				if !rp.is_valid() {
+					break;
+				}
+			}
+			next
 		})
 		.collect::<Vec<_>>();
 	}
-	format!("{:?}", accepted)
+	accepted.into_iter().map(|rp| rp.combos()).sum::<usize>().to_string()
 }
