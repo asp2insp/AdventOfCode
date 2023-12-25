@@ -4,6 +4,31 @@ use aoc::utils::*;
 use itertools::Itertools;
 use regex::Regex;
 
+fn measure_area(g: &Grid<()>) -> usize {
+    let mut by_y = HashMap::new();
+    for (p, _) in g.iter_chars().filter(|(_, c)| *c == '#') {
+        by_y.entry(p.y).or_insert_with(Vec::new).push(p.x);
+    }
+    by_y.into_iter()
+        .map(|(_, mut v)| {
+            v.sort();
+            let mut sum = 0;
+            let mut inside = true;
+            for (l, r) in v.iter().tuple_windows() {
+                if r - l == 1 {
+					continue
+                } else if inside {
+                    sum += r - l - 1;
+				}
+                inside = !inside;
+            }
+            sum += v.len() as isize; // Add the walls themselves
+			println!("{:?} {}", v, sum);
+            sum
+        })
+        .sum::<isize>() as usize
+}
+
 pub fn part1(input: String) -> String {
     let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.',()));
     let mut v = vec![];
