@@ -1,5 +1,6 @@
 use fnv::{FnvHashMap, FnvHashSet};
 use itertools::*;
+use rayon::vec;
 use std::any::TypeId;
 use std::cell::Cell;
 use std::cmp::{max, min};
@@ -1412,6 +1413,25 @@ impl<T> Grid<T> {
         ]
         .into_iter()
         .filter_map(|n| n)
+    }
+
+    pub fn neighbors_wrapping(&self, p: Point) -> impl Iterator<Item = Point> {
+        use Direction::*;
+
+        vec![
+            self.drive_wrap(p, N),
+            self.drive_wrap(p, S),
+            self.drive_wrap(p, E),
+            self.drive_wrap(p, W),
+        ]
+        .into_iter()
+        .filter_map(|pnew| if self.in_bounds(pnew) && !self.is_wall(pnew) {
+            Some(pnew)
+        } else {
+            None
+        })
+        .collect_vec()
+        .into_iter()
     }
 
     pub fn neighbors_with_directions(&self, p: Point) -> impl Iterator<Item = (Direction, Point)> {
