@@ -12,6 +12,13 @@ use std::hash::Hash;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
+pub fn drop_by_idx<T>(v: Vec<T>, idx: &[usize]) -> Vec<T> {
+    v.into_iter()
+        .enumerate()
+        .filter_map(|(i, t)| if idx.contains(&i) { None } else { Some(t) })
+        .collect()
+}
+
 /// Try to consume a set of characters
 pub fn munch<'a, 'b, T>(
     input: &'a [T],
@@ -393,15 +400,34 @@ fn char_set() {
 
 /// A better version of half-inclusive range (includes bottom but not top)
 /// supporting algebraic operations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BetterRange {
     pub bottom: usize,
     pub top: usize,
 }
 
 impl BetterRange {
+    pub fn new_unordered_inclusive(a: usize, b: usize) -> BetterRange {
+        BetterRange {
+            bottom: a.min(b),
+            top: a.max(b) + 1,
+        }
+    }
+
     pub fn new(bottom: usize, top: usize) -> BetterRange {
         BetterRange { bottom, top }
+    }
+
+    pub fn shift(&self, offset: isize) -> BetterRange {
+        BetterRange {
+            bottom: (self.bottom as isize + offset) as usize,
+            top: (self.top as isize + offset) as usize,
+        }
+    }
+
+    pub fn shift_mut(&mut self, offset: isize) {
+        self.bottom = (self.bottom as isize + offset) as usize;
+        self.top = (self.top as isize + offset) as usize;
     }
 
     pub fn new_from_length(bottom: usize, len: usize) -> BetterRange {
@@ -424,6 +450,10 @@ impl BetterRange {
                 top: min(self.top, other.top),
             })
         }
+    }
+
+    pub fn overlaps(&self, other: &BetterRange) -> bool {
+        !(self.bottom >= other.top || self.top <= other.bottom)
     }
 
     pub fn len(&self) -> usize {
