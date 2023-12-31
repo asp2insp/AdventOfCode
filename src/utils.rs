@@ -806,10 +806,10 @@ impl Direction {
         use Direction::*;
 
         match c {
-            'N' | 'n' => Ok(N),
-            'S' | 's' => Ok(S),
-            'E' | 'e' => Ok(E),
-            'W' | 'w' => Ok(W),
+            'N' | 'n' | '^' => Ok(N),
+            'S' | 's' | 'v' => Ok(S),
+            'E' | 'e' | '>' => Ok(E),
+            'W' | 'w' | '<' => Ok(W),
             _ => Err(()),
         }
     }
@@ -1298,6 +1298,12 @@ impl<T> Grid<T> {
         self.iter_chars()
             .find(|(p, c)| *c == needle)
             .map(|(p, _)| p)
+    }
+
+    pub fn find_in_range(&self, needle: char, xrange: RangeInclusive<isize>, yrange: RangeInclusive<isize>) -> Option<Point> {
+        self.iter_range(Some(xrange), Some(yrange))
+            .find(|(p, c, _)| *c == needle)
+            .map(|(p, _, _)| p)
     }
 
     pub fn fill_with(
