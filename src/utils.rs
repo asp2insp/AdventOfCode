@@ -5,8 +5,8 @@ use std::any::TypeId;
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
-use std::collections::VecDeque;
 use std::collections::BinaryHeap;
+use std::collections::VecDeque;
 use std::fmt;
 use std::hash::Hash;
 use std::ops::RangeInclusive;
@@ -94,16 +94,22 @@ mod munch_tests {
     }
 }
 
-use std::cmp::{Ordering, Ord, PartialOrd};
+use std::cmp::{Ord, Ordering, PartialOrd};
 
 #[derive(Eq, PartialEq, Hash, Clone)]
-struct State<S> (S, isize);
-impl <S> Ord for State<S> where S: Eq + PartialEq {
+struct State<S>(S, isize);
+impl<S> Ord for State<S>
+where
+    S: Eq + PartialEq,
+{
     fn cmp(&self, other: &Self) -> Ordering {
         self.1.cmp(&other.1).reverse()
     }
 }
-impl <S> PartialOrd for State<S> where S: Eq + PartialEq {
+impl<S> PartialOrd for State<S>
+where
+    S: Eq + PartialEq,
+{
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.1.cmp(&other.1).reverse())
     }
@@ -220,12 +226,6 @@ where
         self.0.len()
     }
 
-    pub fn clone_with(&self, t: T) -> Self {
-        let mut nv = VecSet(self.0.clone());
-        nv.insert(t);
-        nv
-    }
-
     pub fn starts_with(&self, v: &[T]) -> bool {
         self.0.starts_with(&v)
     }
@@ -234,6 +234,26 @@ where
         let mut selfsorted = self.0.clone();
         selfsorted.sort();
         selfsorted
+    }
+}
+
+pub trait CloneWith<T> {
+    fn clone_with(&self, t: T) -> Self;
+}
+
+impl <T> CloneWith<T> for VecSet<T> where T: Clone + PartialEq + Ord {
+    fn clone_with(&self, t: T) -> Self {
+        let mut nv = VecSet(self.0.clone());
+        nv.insert(t);
+        nv
+    }
+}
+
+impl <T> CloneWith<T> for FnvHashSet<T> where T: Clone + PartialEq + Eq + Hash {
+    fn clone_with(&self, t: T) -> Self {
+        let mut n = self.clone();
+        n.insert(t);
+        n
     }
 }
 
@@ -477,8 +497,8 @@ impl BetterRange {
     pub fn restrict(&self, op: &str, val: usize) -> BetterRange {
         match op {
             "<" => self.max(val),
-            ">" => self.min(val+1),
-            "<=" => self.max(val+1),
+            ">" => self.min(val + 1),
+            "<=" => self.max(val + 1),
             ">=" => self.min(val),
             _ => panic!("Invalid operator {}", op),
         }
@@ -1300,7 +1320,12 @@ impl<T> Grid<T> {
             .map(|(p, _)| p)
     }
 
-    pub fn find_in_range(&self, needle: char, xrange: RangeInclusive<isize>, yrange: RangeInclusive<isize>) -> Option<Point> {
+    pub fn find_in_range(
+        &self,
+        needle: char,
+        xrange: RangeInclusive<isize>,
+        yrange: RangeInclusive<isize>,
+    ) -> Option<Point> {
         self.iter_range(Some(xrange), Some(yrange))
             .find(|(p, c, _)| *c == needle)
             .map(|(p, _, _)| p)
@@ -1461,10 +1486,12 @@ impl<T> Grid<T> {
             self.drive_wrap(p, W),
         ]
         .into_iter()
-        .filter_map(|pnew| if self.in_bounds(pnew) && !self.is_wall(pnew) {
-            Some(pnew)
-        } else {
-            None
+        .filter_map(|pnew| {
+            if self.in_bounds(pnew) && !self.is_wall(pnew) {
+                Some(pnew)
+            } else {
+                None
+            }
         })
         .collect_vec()
         .into_iter()
