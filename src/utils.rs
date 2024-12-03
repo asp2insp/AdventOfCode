@@ -241,7 +241,10 @@ pub trait CloneWith<T> {
     fn clone_with(&self, t: T) -> Self;
 }
 
-impl <T> CloneWith<T> for VecSet<T> where T: Clone + PartialEq + Ord {
+impl<T> CloneWith<T> for VecSet<T>
+where
+    T: Clone + PartialEq + Ord,
+{
     fn clone_with(&self, t: T) -> Self {
         let mut nv = VecSet(self.0.clone());
         nv.insert(t);
@@ -249,7 +252,10 @@ impl <T> CloneWith<T> for VecSet<T> where T: Clone + PartialEq + Ord {
     }
 }
 
-impl <T> CloneWith<T> for FnvHashSet<T> where T: Clone + PartialEq + Eq + Hash {
+impl<T> CloneWith<T> for FnvHashSet<T>
+where
+    T: Clone + PartialEq + Eq + Hash,
+{
     fn clone_with(&self, t: T) -> Self {
         let mut n = self.clone();
         n.insert(t);

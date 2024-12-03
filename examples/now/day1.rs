@@ -1,57 +1,33 @@
-use aoc::parse;
-use aoc::utils::*;
+use aoc::utils::IterUtils;
+use aoc::utils::gimme_usize_nums;
 
 pub fn part1(input: String) -> String {
-	input.lines()
-		.map(|l| {
-			let mut digits = l.chars().filter(is_digit);
-			let f = digits.next().unwrap();
-			let l = digits.last().unwrap_or(f);
-			let n = format!("{}{}", f, l);
-			parse!(n, u32)
-		})
-		.sum::<u32>()
-		.to_string()
+    let (mut a, mut b) =
+        gimme_usize_nums(&input)
+            .into_iter()
+            .fold((Vec::new(), Vec::new()), |mut acc, x| {
+                acc.0.push(x[0]);
+                acc.1.push(x[1]);
+                acc
+            });
+    a.sort();
+    b.sort();
+    a.into_iter()
+        .zip(b.into_iter())
+        .map(|(x, y)| x.abs_diff(y))
+        .sum::<usize>()
+        .to_string()
 }
-
-/// If the string starting from s represents a digit, either
-/// literal or spelled out, return it. Otherwise None
-fn grab_digit_from_s(s: &str, i: usize) -> Option<u32> {
-	if s[i..].starts_with("0") || s[i..].starts_with("zero") {
-		return Some(0)
-	} else if s[i..].starts_with("1") || s[i..].starts_with("one") {
-		return Some(1)
-	} else if s[i..].starts_with("2") || s[i..].starts_with("two") {
-		return Some(2)
-	} else if s[i..].starts_with("3") || s[i..].starts_with("three") {
-		return Some(3)
-	} else if s[i..].starts_with("4") || s[i..].starts_with("four") {
-		return Some(4)
-	} else if s[i..].starts_with("5") || s[i..].starts_with("five") {
-		return Some(5)
-	} else if s[i..].starts_with("6") || s[i..].starts_with("six") {
-		return Some(6)
-	} else if s[i..].starts_with("7") || s[i..].starts_with("seven") {
-		return Some(7)
-	} else if s[i..].starts_with("8") || s[i..].starts_with("eight") {
-		return Some(8)
-	} else if s[i..].starts_with("9") || s[i..].starts_with("nine") {
-		return Some(9)
-	} else {
-		None
-	}
-}
-
 
 pub fn part2(input: String) -> String {
-	input.lines()
-		.map(|l| {
-			let mut digits = (0..l.len()).flat_map(|i| grab_digit_from_s(l, i));
-			let f = digits.next().unwrap();
-			let l = digits.last().unwrap_or(f);
-			let n = format!("{}{}", f, l);
-			parse!(n, u32)
-		})
-		.sum::<u32>()
-		.to_string()
+	let (a, b) =
+        gimme_usize_nums(&input)
+            .into_iter()
+            .fold((Vec::new(), Vec::new()), |mut acc, x| {
+                acc.0.push(x[0]);
+                acc.1.push(x[1]);
+                acc
+            });
+	let counts = b.into_iter().counting_set();
+	a.into_iter().map(|x| counts.get(&x).unwrap_or(&0) * x).sum::<usize>().to_string()
 }
