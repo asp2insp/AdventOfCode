@@ -1,5 +1,5 @@
-use aoc::utils::IterUtils;
 use aoc::utils::gimme_usize_nums;
+use aoc::utils::IterUtils;
 
 pub fn part1(input: String) -> String {
     let (mut a, mut b) =
@@ -20,7 +20,7 @@ pub fn part1(input: String) -> String {
 }
 
 pub fn part2(input: String) -> String {
-	let (a, b) =
+    let (a, b) =
         gimme_usize_nums(&input)
             .into_iter()
             .fold((Vec::new(), Vec::new()), |mut acc, x| {
@@ -28,6 +28,9 @@ pub fn part2(input: String) -> String {
                 acc.1.push(x[1]);
                 acc
             });
-	let counts = b.into_iter().counting_set();
-	a.into_iter().map(|x| counts.get(&x).unwrap_or(&0) * x).sum::<usize>().to_string()
+    let counts = b.into_iter().counting_set();
+    a.into_iter()
+        .map(|x| counts.get(&x).unwrap_or(&0) * x)
+        .sum::<usize>()
+        .to_string()
 }

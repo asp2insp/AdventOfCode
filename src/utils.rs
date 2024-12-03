@@ -237,6 +237,18 @@ where
     }
 }
 
+pub trait CloneWithoutIdx {
+    fn clone_without_idx(&self, i: usize) -> Self;
+}
+
+impl <T> CloneWithoutIdx for Vec<T> where T: Clone {
+    fn clone_without_idx(&self, i: usize) -> Self {
+        let mut nv = self.clone();
+        nv.remove(i);
+        nv
+    }
+}
+
 pub trait CloneWith<T> {
     fn clone_with(&self, t: T) -> Self;
 }
