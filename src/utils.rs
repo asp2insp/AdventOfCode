@@ -1338,6 +1338,13 @@ impl<T> Grid<T> {
             .map(|(p, _)| p)
     }
 
+    pub fn find_all(&self, needle: char) -> Vec<Point> {
+        self.iter_chars()
+            .filter(|(_, c)| *c == needle)
+            .map(|(p, _)| p)
+            .collect_vec()
+    }
+
     pub fn find_in_range(
         &self,
         needle: char,
@@ -1441,6 +1448,14 @@ impl<T> Grid<T> {
     pub fn drive_iter<'a>(&'a self, p: Point, d: Direction) -> impl Iterator<Item = Point> + 'a {
         DriveIter {
             dir: d,
+            curr: Some(p),
+            g: self,
+        }
+    }
+
+    pub fn drive_iter_diagonal<'a>(&'a self, p: Point, ds: (Direction, Direction)) -> impl Iterator<Item = Point> + 'a {
+        DriveIterDiagonal {
+            dirs: ds,
             curr: Some(p),
             g: self,
         }
@@ -1764,6 +1779,24 @@ impl<'a, T> Iterator for DriveIter<'a, T> {
     fn next(&mut self) -> Option<Point> {
         if let Some(p) = self.curr {
             self.curr = self.g.drive(p, self.dir);
+            self.curr
+        } else {
+            None
+        }
+    }
+}
+
+struct DriveIterDiagonal<'a, T> {
+    curr: Option<Point>,
+    dirs: (Direction, Direction),
+    g: &'a Grid<T>,
+}
+
+impl<'a, T> Iterator for DriveIterDiagonal<'a, T> {
+    type Item = Point;
+    fn next(&mut self) -> Option<Point> {
+        if let Some(p) = self.curr {
+            self.curr = self.g.drive2(p, self.dirs.0, self.dirs.1);
             self.curr
         } else {
             None
