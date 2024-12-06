@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use aoc::utils::ToDebugString;
-use regex::Regex;
 use num::integer::lcm;
+use regex::Regex;
 
 fn parse<'a>(l: impl Iterator<Item = &'a str>) -> HashMap<String, Vec<String>> {
     let re = Regex::new(r"^(\w+) = \((\w+), (\w+)\)$").unwrap();
@@ -44,13 +44,13 @@ pub fn part1(input: String) -> String {
 }
 
 fn cycle_size(start: &String, map: &HashMap<String, Vec<String>>, instrs: &Vec<usize>) -> usize {
-	let mut count = 0;
-	let mut pos = start.clone();
-	while !pos.ends_with("Z") {
-		pos = map.get(&pos).unwrap()[instrs[count % instrs.len()]].clone();
-		count += 1;
-	}
-	count
+    let mut count = 0;
+    let mut pos = start.clone();
+    while !pos.ends_with("Z") {
+        pos = map.get(&pos).unwrap()[instrs[count % instrs.len()]].clone();
+        count += 1;
+    }
+    count
 }
 
 pub fn part2(input: String) -> String {
@@ -67,11 +67,10 @@ pub fn part2(input: String) -> String {
         .collect::<Vec<usize>>();
     let map = parse(l.skip(1));
 
-    map
-        .keys()
+    map.keys()
         .filter(|k| k.ends_with("A"))
         .cloned()
-		.map(|k| cycle_size(&k, &map, &instrs))
+        .map(|k| cycle_size(&k, &map, &instrs))
         .reduce(|acc, n| lcm(acc, n))
-		.to_debug_string()
+        .to_debug_string()
 }

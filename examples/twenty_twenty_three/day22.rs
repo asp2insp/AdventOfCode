@@ -1,6 +1,9 @@
 use std::collections::{HashMap, VecDeque};
 
-use aoc::{utils::{drop_by_idx, BetterRange}, makeset};
+use aoc::{
+    makeset,
+    utils::{drop_by_idx, BetterRange},
+};
 
 const FLOOR: usize = 999999;
 
@@ -11,7 +14,7 @@ struct Block {
     yrange: BetterRange,
     zrange: BetterRange,
     supported_by: Vec<usize>,
-	supports: Vec<usize>,
+    supports: Vec<usize>,
 }
 
 impl Block {
@@ -50,7 +53,7 @@ fn parse(s: &str) -> Vec<Block> {
             yrange: BetterRange::new_unordered_inclusive(v[0][1], v[1][1]),
             zrange: BetterRange::new_unordered_inclusive(v[0][2], v[1][2]),
             supported_by: vec![],
-			supports: vec![],
+            supports: vec![],
         })
         .collect()
 }
@@ -98,7 +101,7 @@ fn settle(mut blocks: Vec<Block>) -> Vec<Block> {
                 for o in &mut output {
                     if o.is_right_below(&b2) {
                         b2.supported_by.push(o.id);
-						o.supports.push(b2.id);
+                        o.supports.push(b2.id);
                     }
                 }
                 output.push(b2);
@@ -131,27 +134,28 @@ pub fn part1(input: String) -> String {
 pub fn part2(input: String) -> String {
     let blocks = parse(&input);
     let settled = settle(blocks);
-	let by_id = settled.iter().map(|b| (b.id, b)).collect::<HashMap<_, _>>();
-	settled.iter()
-		.map(|b| {
-			let mut dis = makeset!(b.id);
-			let mut queue = VecDeque::new();
-			b.supports.iter().for_each(|s| queue.push_back(&by_id[s]));
-			while !queue.is_empty() {
-				let nb = queue.pop_front().unwrap();
-				if nb.supported_by.iter().all(|s| dis.contains(s)) {
-					dis.insert(nb.id);
-					for s in &nb.supports {
-						if !dis.contains(s) {
-							queue.push_back(&by_id[s]);
-						}
-					}
-				}
-			}
-			dis.len() - 1
-		})
-		.sum::<usize>()
-		.to_string()
+    let by_id = settled.iter().map(|b| (b.id, b)).collect::<HashMap<_, _>>();
+    settled
+        .iter()
+        .map(|b| {
+            let mut dis = makeset!(b.id);
+            let mut queue = VecDeque::new();
+            b.supports.iter().for_each(|s| queue.push_back(&by_id[s]));
+            while !queue.is_empty() {
+                let nb = queue.pop_front().unwrap();
+                if nb.supported_by.iter().all(|s| dis.contains(s)) {
+                    dis.insert(nb.id);
+                    for s in &nb.supports {
+                        if !dis.contains(s) {
+                            queue.push_back(&by_id[s]);
+                        }
+                    }
+                }
+            }
+            dis.len() - 1
+        })
+        .sum::<usize>()
+        .to_string()
 }
 
 #[test]
@@ -164,5 +168,5 @@ fn test() {
 0,1,6~2,1,6
 1,1,8~1,1,9";
     assert_eq!(part1(i.to_string()), "5");
-	assert_eq!(part2(i.to_string()), "7");
+    assert_eq!(part2(i.to_string()), "7");
 }

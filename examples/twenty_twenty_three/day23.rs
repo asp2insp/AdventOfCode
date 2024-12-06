@@ -1,90 +1,138 @@
-use std::collections::{HashMap, VecDeque};
-use itertools::Itertools;
+use std::collections::VecDeque;
+
+use aoc::dict;
 use aoc::makeset;
-use aoc::utils::{Grid, Point, Direction};
-use aoc::utils::CloneWith;
+use aoc::utils::AdjacencyList;
+use aoc::utils::{Direction, Grid, Point};
+use fnv::FnvHashSet;
+use itertools::Itertools;
 
-// fn find_longest_path_to_ends(g: &Grid<()>, start: Point) -> Vec<(Point, usize)> {
-// 	let mut visited = HashSet::new();
-// 	let mut queue = VecDeque::new();
-// 	queue.push_back((start, 0));
-// 	let mut ends = Vec::new();
-// 	while let Some((p, d)) = queue.pop_front() {
-// 		if !visited.
-// 	}
-// }
-
-fn pair_dists(pts: &[(Point, char)], g: &Grid<()>) -> HashMap<Point, HashMap<Point, isize>> {
-	let mut ret = HashMap::new();
-	for i in 0..pts.len() {
-		for j in 0..pts.len() {
-			if i == j {
-				continue;
-			}
-			let reachable = g.bfs_generic(
-				makeset!(pts[i].0), 
-				Some(&|pt| 
-					g.neighbors_with_directions(pt).filter(|(dir, n)| g.read_pt(n) == '.' || ( 
-						*n == pts[j].0 &&
-						match (g.read_pt(n), dir) {
-							('>', Direction::W) => true,
-							('<', Direction::E) => true,
-							('^', Direction::N) => true,
-							('v',  Direction::S) => true,
-							_ => false,
-						}
-					)).map(|(_, n)| (n, 1)).collect_vec()), 
-				Some(&|dists| dists.contains_key(&pts[j].0))
-			);
-			if let Some((dist, _)) = reachable.get(&pts[j].0) {
-				ret.entry(pts[j].0).or_insert(HashMap::new()).insert(pts[i].0, *dist);
-			}
-		}
-	}
-	ret
+fn pair_dists(g: &Grid<()>, allow_uphill: bool) -> (AdjacencyList, Point, Point) {
+    let (l, bt, r, top) = g.get_bounds();
+    let start = g.find_in_range('.', l..=r, top..=top).unwrap();
+    let end = g.find_in_range('.', l..=r, bt..=bt).unwrap();
+    let mut junctions = g
+        .iter_chars()
+        .filter(|(_, c)| "<>v^".contains(*c)) // find slopes
+        .flat_map(|(p, c)| g.neighbors(p).map(move |n| (n, g.read_pt(&n)))) // Find the char next to slope
+        .filter(|(p, _c)| g.neighbors(*p).all(|n| g.read_pt(&n) != '.')) // that is surrounded by slope
+        .collect_vec();
+    // println!("{:?}", junctions);
+    junctions.push((start, '.'));
+    junctions.push((end, '.'));
+    let pts = junctions;
+    let mut ret = dict!();
+    let gates = pts.iter().map(|(p, _)| *p).collect::<FnvHashSet<_>>();
+    for (gate_p, _gate_c) in pts {
+        let starts = makeset!(gate_p);
+        let reachable = g.bfs_generic(
+            starts,
+            Some(&|pt| {
+                if pt != gate_p && gates.contains(&pt) {
+                    vec![]
+                } else {
+                    g.neighbors_with_directions(pt)
+                        .filter(|(d, p)| match (d, g.read_pt(p)) {
+                            (Direction::E, '<') => allow_uphill,
+                            (Direction::W, '>') => allow_uphill,
+                            (Direction::N, 'v') => allow_uphill,
+                            (Direction::S, '^') => allow_uphill,
+                            _ => true,
+                        })
+                        .map(|n| (n.1, 1))
+                        .collect_vec()
+                }
+            }),
+            None,
+        );
+        for (p, dist) in reachable {
+            if gates.contains(&p) && p != gate_p {
+                ret.entry(gate_p).or_insert(dict!()).insert(p, dist.0);
+            }
+        }
+    }
+    (AdjacencyList::new(ret), start, end)
 }
-
-
 
 pub fn part1(input: String) -> String {
-	let mut g = Grid::new(&input, ());
-	g.wall_char = '#';
-	let (l, bt, r, top) = g.get_bounds();
-	let start = g.find_in_range('.', l..=r, top..=top).unwrap();
-	let end = g.find_in_range('.', l..=r, 0..=0).unwrap();
-	let mut junctions = g.iter_chars().filter(|(_, c)| "<>v^".contains(*c)).collect_vec();
-	junctions.push((start, '.'));
-	junctions.push((end, '.'));
-	let adj_list = pair_dists(&junctions, &g);
-	assert!(adj_list.contains_key(&start));
-
-	let mut s = String::new();
-	for a in adj_list {
-		for b in a.1 {
-			s.push_str(&format!("\"{},{}\" -> \"{},{}\" [label={}]\n", a.0.x, a.0.y, b.0.x, b.0.y, b.1));
-		}
-	}
-	println!("{}", s);
-	s
-
-	// let mut max_dist = 0;
-	// let mut q = VecDeque::new();
-	// q.push_back((start, 0, makeset!(start)));
-	// while let Some((n, d, visited)) = q.pop_front() {
-	// 	if n == end && d > max_dist {
-	// 		max_dist = d;
-	// 		continue;
-	// 	}
-	// 	for (adj, dist) in adj_list.get(&n).unwrap_or(&HashMap::new()) {
-	// 		if !visited.contains(adj) {
-	// 			q.push_back((*adj, d+dist, visited.clone_with(*adj)));
-	// 		}
-	// 	}
-	// }
-	// format!("{:?}", max_dist)
+    let mut g = Grid::new(&input, ());
+    g.wall_char = '#';
+    let (adj_list, start, end) = pair_dists(&g, false);
+    println!("{:?}", adj_list);
+    let mut max_dist = 0;
+    let mut q = VecDeque::new();
+    q.push_back((start, 0, makeset!(start)));
+    while let Some((p, dist, seen)) = q.pop_front() {
+        if p == end && dist > max_dist {
+            max_dist = dist;
+        }
+        adj_list
+            .bfs_step((p, dist, seen), None)
+            .into_iter()
+            .for_each(|x| q.push_front(x));
+    }
+    max_dist.to_string()
 }
-
 
 pub fn part2(input: String) -> String {
-	"part2".to_string()
+    let mut g = Grid::new(&input, ());
+    g.wall_char = '#';
+    let (mut adj_list, start, end) = pair_dists(&g, true);
+    adj_list.add_back_edges();
+    // println!("{:?}", adj_list);
+    let mut max_dist = 0;
+    let mut q = VecDeque::new();
+    q.push_back((start, 0, makeset!(start)));
+    // q.pop();
+    while let Some((p, dist, seen)) = q.pop_front() {
+        if p == end && dist > max_dist {
+            // println!("Found new max dist: {}", dist);
+            max_dist = dist;
+        }
+        adj_list
+            .bfs_step((p, dist, seen), None)
+            .into_iter()
+            .for_each(|x| q.push_front(x));
+    }
+    max_dist.to_string()
 }
+
+#[test]
+fn test_mini() {
+    let input = r#"#.#######
+		#..>.>..#
+		####v####
+		####....#
+		#######.#"#;
+    assert_eq!(part1(input.to_string()), "10");
+}
+
+#[test]
+fn test_example() {
+    assert_eq!("94", part1(EXAMPLE.to_string()));
+    assert_eq!("154", part2(EXAMPLE.to_string()));
+}
+
+const EXAMPLE: &str = r#"#.#####################
+#.......#########...###
+#######.#########.#.###
+###.....#.>.>.###.#.###
+###v#####.#v#.###.#.###
+###.>...#.#.#.....#...#
+###v###.#.#.#########.#
+###...#.#.#.......#...#
+#####.#.#.#######.#.###
+#.....#.#.#.......#...#
+#.#####.#.#.#########v#
+#.#...#...#...###...>.#
+#.#.#v#######v###.###v#
+#...#.>.#...>.>.#.###.#
+#####v#.#.###v#.#.###.#
+#.....#...#...#.#.#...#
+#.#########.###.#.#.###
+#...###...#...#...#.###
+###.###.#.###v#####v###
+#...#...#.#.>.>.#.>.###
+#.###.###.#.###.#.#v###
+#.....###...###...#...#
+#####################.#"#;

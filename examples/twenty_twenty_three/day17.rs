@@ -27,7 +27,10 @@ pub fn part2(input: String) -> String {
     let g = Grid::new_with(&input, |c| c.to_digit(10).unwrap() as isize);
     let goal = Point::new(g.right_bound, g.bottom_bound);
     a_star(
-        (Point::new(g.left_bound, g.top_bound), [N, N, N, N, N, N, N, N, N, N]),
+        (
+            Point::new(g.left_bound, g.top_bound),
+            [N, N, N, N, N, N, N, N, N, N],
+        ),
         |&(pt, _dirs)| pt.dist(&goal),
         |(pt, dirs)| {
             g.neighbors_with_directions(pt)
@@ -42,7 +45,18 @@ pub fn part2(input: String) -> String {
                         dirs.iter().take(4).unique().count() == 1
                     }
                 })
-                .map(|(np, c)| ((np.1, [np.0, dirs[0], dirs[1], dirs[2], dirs[3], dirs[4], dirs[5], dirs[6], dirs[7], dirs[8]]), c))
+                .map(|(np, c)| {
+                    (
+                        (
+                            np.1,
+                            [
+                                np.0, dirs[0], dirs[1], dirs[2], dirs[3], dirs[4], dirs[5],
+                                dirs[6], dirs[7], dirs[8],
+                            ],
+                        ),
+                        c,
+                    )
+                })
                 .collect_vec()
         },
         |&(pt, _)| pt == goal,
@@ -70,10 +84,10 @@ fn test_example() {
     assert_eq!(part1(input), "102");
 }
 
-
 #[test]
 fn test_even_simpler() {
-	let input = r"112999
-911111".to_string();
-	assert_eq!(part1(input), "7");
+    let input = r"112999
+911111"
+        .to_string();
+    assert_eq!(part1(input), "7");
 }

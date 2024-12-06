@@ -1,5 +1,3 @@
-
-
 use aoc::utils::*;
 use itertools::Itertools;
 use regex::Regex;
@@ -16,21 +14,21 @@ fn measure_area(g: &Grid<()>) -> usize {
             let mut inside = true;
             for (l, r) in v.iter().tuple_windows() {
                 if r - l == 1 {
-					continue
+                    continue;
                 } else if inside {
                     sum += r - l - 1;
-				}
+                }
                 inside = !inside;
             }
             sum += v.len() as isize; // Add the walls themselves
-			println!("{:?} {}", v, sum);
+            println!("{:?} {}", v, sum);
             sum
         })
         .sum::<isize>() as usize
 }
 
 pub fn part1(input: String) -> String {
-    let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.',()));
+    let mut g = Grid::new_with_bounds(0, 0, 0, 0, |_| ('.', ()));
     let mut v = vec![];
     g.clear_bounds();
     let mut p = Point::new(0, 0);
@@ -51,7 +49,14 @@ pub fn part1(input: String) -> String {
         }
     }
     v.push(p);
-    let ans = v.into_iter().tuple_windows().map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2)).sum::<isize>().abs() / 2 + 1;
+    let ans = v
+        .into_iter()
+        .tuple_windows()
+        .map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2))
+        .sum::<isize>()
+        .abs()
+        / 2
+        + 1;
     ans.to_string()
     // let inside = g.flood_search_by_pred(Point::new(1, 1), |pf, pt| g.get(pf).map(|c| c.0).unwrap_or('.') != '#' && g.get(pt).map(|c| c.0).unwrap_or('.') != '#').len();
     // let outside = g.iter_chars().filter(|&(_, c)| c == '#').count();
@@ -77,7 +82,14 @@ pub fn part2(input: String) -> String {
         p = p.offset_dir_long(dir, dist as isize);
     }
     v.push(p);
-    let ans = v.into_iter().tuple_windows().map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2) ).sum::<isize>().abs() / 2 + 1;
+    let ans = v
+        .into_iter()
+        .tuple_windows()
+        .map(|(p1, p2)| (p1.x * p2.y - p1.y * p2.x) - p1.dist(&p2))
+        .sum::<isize>()
+        .abs()
+        / 2
+        + 1;
     ans.to_string()
 }
 

@@ -83,9 +83,9 @@ fn get_hand_rank_with_j(hand: &str) -> usize {
     let mut set = hand.chars().counting_set();
     let joker_count = set.remove(&'J').unwrap_or(0);
     let mut values = set.into_values().sorted().rev().collect::<Vec<_>>();
-	if values.is_empty() {
-		values.push(0);
-	}
+    if values.is_empty() {
+        values.push(0);
+    }
     values[0] += joker_count;
     match values.as_slice() {
         [5] => 7,

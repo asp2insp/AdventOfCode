@@ -15,8 +15,8 @@ impl Signal {
 
 use std::collections::HashMap;
 
-use Signal::*;
 use itertools::Itertools;
+use Signal::*;
 
 struct FlipFlop {
     is_on: bool,
@@ -72,7 +72,7 @@ enum Component {
     FlipFlop(FlipFlop),
     Conjunction(Conjunction),
     Broadcast,
-	Rx,
+    Rx,
 }
 
 impl Component {
@@ -84,7 +84,7 @@ impl Component {
                 High => Some(High),
                 Low => Some(Low),
             },
-			Component::Rx => None,
+            Component::Rx => None,
         }
     }
 
@@ -92,19 +92,19 @@ impl Component {
         match self {
             Component::FlipFlop(_) => {}
             Component::Conjunction(c) => c.add_input(name),
-            Component::Broadcast => {},
-			Component::Rx => {},
+            Component::Broadcast => {}
+            Component::Rx => {}
         }
     }
 
-	fn inputs(&self) -> Vec<String> {
-		match self {
-			Component::FlipFlop(_) => vec![],
-			Component::Conjunction(c) => c.inputs.keys().cloned().collect(),
-			Component::Broadcast => vec![],
-			Component::Rx => vec![],
-		}
-	}
+    fn inputs(&self) -> Vec<String> {
+        match self {
+            Component::FlipFlop(_) => vec![],
+            Component::Conjunction(c) => c.inputs.keys().cloned().collect(),
+            Component::Broadcast => vec![],
+            Component::Rx => vec![],
+        }
+    }
 }
 
 fn parse(input: &str) -> HashMap<String, (Component, Vec<String>)> {
@@ -130,7 +130,7 @@ fn parse(input: &str) -> HashMap<String, (Component, Vec<String>)> {
         reverse_map.push((name.clone(), outputs.clone()));
         components.insert(name, (component, outputs));
     }
-	components.insert("rx".to_string(), (Component::Rx, vec![]));
+    components.insert("rx".to_string(), (Component::Rx, vec![]));
     for (name, outputs) in reverse_map {
         for output in outputs {
             if let Some(c) = components.get_mut(&output) {
@@ -171,13 +171,20 @@ pub fn part1(input: String) -> String {
 }
 
 pub fn part2(input: String) -> String {
-	let mut components = parse(&input);
-	let mut i = 0;
-	let mut is_done = false;
-	let mut targets = components.get("zh").unwrap().0.inputs().iter().map(|s| (s.clone(), 0)).collect::<HashMap<_, _>>();
-	while !is_done {
-		i += 1;
-		let mut s = vec![("button".to_string(), "broadcaster".to_string(), Low)];
+    let mut components = parse(&input);
+    let mut i = 0;
+    let mut is_done = false;
+    let mut targets = components
+        .get("zh")
+        .unwrap()
+        .0
+        .inputs()
+        .iter()
+        .map(|s| (s.clone(), 0))
+        .collect::<HashMap<_, _>>();
+    while !is_done {
+        i += 1;
+        let mut s = vec![("button".to_string(), "broadcaster".to_string(), Low)];
         while !s.is_empty() {
             s = s
                 .into_iter()
@@ -193,13 +200,23 @@ pub fn part2(input: String) -> String {
                     }
                 })
                 .collect();
-			for t in s.iter().filter_map(|(_, n, s)| if !s.is_high() && targets.contains_key(n) { Some(n) } else { None }).collect_vec() {
-				if let Some(0) = targets.get(t).cloned() {
-					targets.insert(t.clone(), i);
-				}
-			}
-			is_done = targets.values().all(|v| *v > 0);
+            for t in s
+                .iter()
+                .filter_map(|(_, n, s)| {
+                    if !s.is_high() && targets.contains_key(n) {
+                        Some(n)
+                    } else {
+                        None
+                    }
+                })
+                .collect_vec()
+            {
+                if let Some(0) = targets.get(t).cloned() {
+                    targets.insert(t.clone(), i);
+                }
+            }
+            is_done = targets.values().all(|v| *v > 0);
         }
-	}
+    }
     targets.into_values().product::<usize>().to_string()
 }

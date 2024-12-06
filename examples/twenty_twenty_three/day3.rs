@@ -35,7 +35,7 @@ pub fn part2(input: String) -> String {
                 .iter()
                 .flat_map(|(pt, _)| g.neighbors_with_diagonals(*pt))
                 .filter(|p| g.read_pt(&p) == '*')
-				.unique()
+                .unique()
                 .for_each(|gp| {
                     gears.entry(gp).or_insert(vec![]).push(n);
                 });
@@ -45,7 +45,7 @@ pub fn part2(input: String) -> String {
             num_parts.push((xy, c.to_digit(10).unwrap()));
         }
     }
-	// println!("{:?}", gears);
+    // println!("{:?}", gears);
     gears
         .into_iter()
         .filter(|(_, v)| v.len() == 2)
@@ -53,7 +53,6 @@ pub fn part2(input: String) -> String {
         .sum::<u32>()
         .to_string()
 }
-
 
 const TEST: &str = r"467..114..
 ...*......
@@ -68,5 +67,5 @@ const TEST: &str = r"467..114..
 #[test]
 fn test_basic() {
     assert_eq!(4361.to_string(), part1(TEST.to_owned()));
-	assert_eq!(467835.to_string(), part2(TEST.to_owned()));
+    assert_eq!(467835.to_string(), part2(TEST.to_owned()));
 }

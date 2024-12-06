@@ -1901,6 +1901,46 @@ impl ToCharArray for &str {
     }
 }
 
+pub struct AdjacencyList {
+    edges: FnvHashMap<Point, FnvHashMap<Point, isize>>,
+}
+
+impl AdjacencyList {
+    pub fn new(edges: FnvHashMap<Point, FnvHashMap<Point, isize>>) -> Self {
+        AdjacencyList { edges }
+    }
+
+    pub fn bfs_step(&self, curr: (Point, isize, FnvHashSet<Point>), filter: Option<&dyn Fn(&Point) -> bool>) -> Vec<(Point, isize, FnvHashSet<Point>)> {
+        let (curr, cost, seen) = curr;
+        let mut next = Vec::new();
+        for (n, c) in self.edges.get(&curr).unwrap_or(&FnvHashMap::default()).iter() {
+            if !seen.contains(n) && filter.as_ref().map_or(true, |f| f(n)) {
+                next.push((*n, cost + c, seen.clone_with(*n)));
+            }
+        }
+        next
+    }
+
+    pub fn add_back_edges(&mut self) {
+        let back_edges = self.edges.iter().flat_map(|(p1, p2s)| p2s.iter().map(|(p2, d)| (*p2, *p1, *d))).collect_vec();
+        for (p2, p1, d) in back_edges {
+            self.edges.entry(p2).or_default().insert(p1, d);
+        }
+    }
+}
+
+
+impl fmt::Debug for AdjacencyList {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for a in &self.edges {
+            for b in a.1 {
+                write!(f, "\"{},{}\" -> \"{},{}\" [label={}]\n", a.0.x, a.0.y, b.0.x, b.0.y, b.1)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

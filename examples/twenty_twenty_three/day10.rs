@@ -74,7 +74,7 @@ pub fn part2(input: String) -> String {
         .unwrap();
 
     let mut seen = HashSet::new();
-	seen.insert(start);
+    seen.insert(start);
     while !seen.contains(&l.1) || !seen.contains(&r.1) {
         seen.insert(l.1);
         seen.insert(r.1);
@@ -103,7 +103,7 @@ pub fn part2(input: String) -> String {
             .sum::<i32>();
         if (winding_num / 2).is_odd() {
             *c = 'I';
-			count += 1;
+            count += 1;
         }
     });
     // println!("{}", g.to_string());
@@ -113,13 +113,13 @@ pub fn part2(input: String) -> String {
 #[cfg(test)]
 mod test {
 
-const INPUT: &str = r"..F7.
+    const INPUT: &str = r"..F7.
 .FJ|.
 SJ.L7
 |F--J
 LJ...";
 
-const I2: &str = r".F----7F7F7F7F-7....
+    const I2: &str = r".F----7F7F7F7F-7....
 .|F--7||||||||FJ....
 .||.FJ||||||||L7....
 FJL7L7LJLJ||LJ.L-7..
@@ -130,12 +130,12 @@ L--J.L7...LJS7F-7L7.
 ....FJL-7.||.||||...
 ....L---J.LJ.LJLJ...";
 
-#[test]
-fn test_part1() {
-    assert_eq!(part1(INPUT.to_string()), "8");
-}
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1(INPUT.to_string()), "8");
+    }
 
-const I3: &str = r"...........
+    const I3: &str = r"...........
 .S-------7.
 .|F-----7|.
 .||.....||.
@@ -145,7 +145,7 @@ const I3: &str = r"...........
 .L--J.L--J.
 ...........";
 
-const I4: &str = r"..........
+    const I4: &str = r"..........
 .S------7.
 .|F----7|.
 .||OOOO||.
@@ -155,12 +155,10 @@ const I4: &str = r"..........
 .L--JL--J.
 ..........";
 
-#[test]
-fn test_part2() {
-    assert_eq!(part2(I3.to_string()), "4");
-    assert_eq!(part2(I4.to_string()), "4");
-	assert_eq!(part2(I2.to_string()), "8");
-
-}
-
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(I3.to_string()), "4");
+        assert_eq!(part2(I4.to_string()), "4");
+        assert_eq!(part2(I2.to_string()), "8");
+    }
 }

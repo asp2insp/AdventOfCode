@@ -57,7 +57,7 @@ fn kargers_to_n(graph: Vec<Adjacency>, n: usize) -> Vec<Adjacency> {
     let mut rng = rand::thread_rng();
     loop {
         let mut graph = graph.clone();
-		// continue until we're only at 2 nodes
+        // continue until we're only at 2 nodes
         while graph.iter().flat_map(|a| [&a.from, &a.to]).unique().count() > 2 {
             let i = rng.gen_range(0..graph.len());
             let adj = graph.remove(i);
@@ -77,9 +77,9 @@ fn kargers_to_n(graph: Vec<Adjacency>, n: usize) -> Vec<Adjacency> {
                     a
                 })
                 .collect();
-			graph.retain(|a| a.from != a.to);
+            graph.retain(|a| a.from != a.to);
         }
-		// println!("Found a cut with {} edges {:?}", graph.len(), graph);
+        // println!("Found a cut with {} edges {:?}", graph.len(), graph);
         if graph.len() == n * 2 {
             break graph;
         }
@@ -110,24 +110,24 @@ fn subgraph_size(graph: &[Adjacency], start: &str) -> usize {
 pub fn part1(input: String) -> String {
     let map = parse(&input);
     let mut adj_list = map_to_adj_list(&map);
-	// for (k, v) in &map {
-	// 	for c in v {
-	// 		println!("{} -- {}", k, c);
-	// 	}
-	// }
+    // for (k, v) in &map {
+    // 	for c in v {
+    // 		println!("{} -- {}", k, c);
+    // 	}
+    // }
     // let cut = kargers_to_n(adj_list, 3);
-	// Found via Graphviz
-	let cut = [
-		Adjacency::new("qmr".to_string(), "ptj".to_string()),
-		Adjacency::new("lsv".to_string(), "lxt".to_string()),
-		Adjacency::new("dhn".to_string(), "xvh".to_string()),
-	];
-	let size_before = adj_list.len();
-	adj_list.retain(|a| !cut.iter().any(|c| a.matches(c)));
-	println!("Removed {} edges", size_before - adj_list.len());
+    // Found via Graphviz
+    let cut = [
+        Adjacency::new("qmr".to_string(), "ptj".to_string()),
+        Adjacency::new("lsv".to_string(), "lxt".to_string()),
+        Adjacency::new("dhn".to_string(), "xvh".to_string()),
+    ];
+    let size_before = adj_list.len();
+    adj_list.retain(|a| !cut.iter().any(|c| a.matches(c)));
+    println!("Removed {} edges", size_before - adj_list.len());
     let lsize = subgraph_size(&adj_list, &cut[0].from);
     let rsize = subgraph_size(&adj_list, &cut[0].to);
-	format!("{} * {} = {}", lsize, rsize, lsize * rsize)
+    format!("{} * {} = {}", lsize, rsize, lsize * rsize)
 }
 
 pub fn part2(input: String) -> String {

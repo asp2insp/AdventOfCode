@@ -1,4 +1,4 @@
-use aoc::utils::{gimme_usizes_once, ToDebugString, BetterRange};
+use aoc::utils::{gimme_usizes_once, BetterRange, ToDebugString};
 
 #[derive(Debug)]
 struct RangeMap {
@@ -26,8 +26,13 @@ impl RangeMap {
 
     fn lookup_range(&self, r: &BetterRange) -> Option<BetterRange> {
         BetterRange::new_from_length(self.source_start, self.length)
-			.intersection(r)
-			.map(|si| BetterRange::new_from_length(self.dest_start + (si.bottom - self.source_start), si.len()))
+            .intersection(r)
+            .map(|si| {
+                BetterRange::new_from_length(
+                    self.dest_start + (si.bottom - self.source_start),
+                    si.len(),
+                )
+            })
     }
 }
 
@@ -36,9 +41,7 @@ fn lookup_group(lookup: usize, maps: &[RangeMap]) -> Option<usize> {
 }
 
 fn lookup_group_range(r: BetterRange, maps: &[RangeMap]) -> Vec<BetterRange> {
-    maps.into_iter()
-        .flat_map(|m| m.lookup_range(&r))
-        .collect()
+    maps.into_iter().flat_map(|m| m.lookup_range(&r)).collect()
 }
 
 fn parse_maps<'a>(l: impl Iterator<Item = &'a str>) -> Vec<Vec<RangeMap>> {

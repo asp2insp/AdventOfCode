@@ -32,7 +32,8 @@ fn roll(g: &Grid<()>, d: Direction) -> Grid<()> {
 
 pub fn part1(input: String) -> String {
     let mut g = Grid::new(&input, ());
-    roll(&g, Direction::N).iter_chars()
+    roll(&g, Direction::N)
+        .iter_chars()
         .filter(|(_, c)| *c == 'O')
         .map(|(p, _)| 1 + p.y)
         .sum::<isize>()
@@ -40,11 +41,11 @@ pub fn part1(input: String) -> String {
 }
 
 fn run_cycle(g: &Grid<()>) -> Grid<()> {
-	let mut g = roll(&g, Direction::N);
-	g = roll(&g, Direction::W);
-	g = roll(&g, Direction::S);
-	g = roll(&g, Direction::E);
-	g
+    let mut g = roll(&g, Direction::N);
+    g = roll(&g, Direction::W);
+    g = roll(&g, Direction::S);
+    g = roll(&g, Direction::E);
+    g
 }
 
 pub fn part2(input: String) -> String {
@@ -53,12 +54,12 @@ pub fn part2(input: String) -> String {
     let mut i = 0;
     while !seen.contains_key(&g.to_string()) {
         seen.insert(g.to_string(), i);
-		g = run_cycle(&g);
+        g = run_cycle(&g);
         i += 1;
         // println!("{}\n", g.to_string())
     }
-	let cycle = i - seen.get(&g.to_string()).unwrap();
-	println!("Found cycle of len {} after {} iterations", cycle, i);
+    let cycle = i - seen.get(&g.to_string()).unwrap();
+    println!("Found cycle of len {} after {} iterations", cycle, i);
     let remainder = (1000000000 - i) % cycle;
     for _ in 0..remainder {
         g = run_cycle(&g);

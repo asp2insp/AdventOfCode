@@ -24,9 +24,21 @@ fn det2(a: [[BigRational; 2]; 2]) -> BigRational {
 }
 
 fn det3(a: [[BigRational; 3]; 3]) -> BigRational {
-    a[0][0].clone() * det2([[a[1][1].clone(), a[1][2].clone()], [a[2][1].clone(), a[2][2].clone()]])
-        - a[0][1].clone() * det2([[a[1][0].clone(), a[1][2].clone()], [a[2][0].clone(), a[2][2].clone()]])
-        + a[0][2].clone() * det2([[a[1][0].clone(), a[1][1].clone()], [a[2][0].clone(), a[2][1].clone()]])
+    a[0][0].clone()
+        * det2([
+            [a[1][1].clone(), a[1][2].clone()],
+            [a[2][1].clone(), a[2][2].clone()],
+        ])
+        - a[0][1].clone()
+            * det2([
+                [a[1][0].clone(), a[1][2].clone()],
+                [a[2][0].clone(), a[2][2].clone()],
+            ])
+        + a[0][2].clone()
+            * det2([
+                [a[1][0].clone(), a[1][1].clone()],
+                [a[2][0].clone(), a[2][1].clone()],
+            ])
 }
 
 impl V3 {
@@ -38,27 +50,24 @@ impl V3 {
         let a = self.pos.x;
         let da = self.vel.x;
 
-		let b = self.pos.y;
+        let b = self.pos.y;
         let db = self.vel.y;
 
-		let c = other.pos.x;
-		let dc = other.vel.x;
+        let c = other.pos.x;
+        let dc = other.vel.x;
 
-		let d = other.pos.y;
-		let dd = other.vel.y;
+        let d = other.pos.y;
+        let dd = other.vel.y;
 
         // a + da * t = c + dc * u => a - c = dc * u - da * t
-		// b + db * t = d + dd * u => b - d = dd * u - db * t
-		let coeffs = [
-			[dc, -da],
-			[dd, -db],
-		];
-		let constants = [a - c, b - d];
-		if let Some((t, _u)) = cramer_2simple(coeffs, constants) {
-			Some((a + da * t, b * db * t))
-		} else {
-			return None;
-		}
+        // b + db * t = d + dd * u => b - d = dd * u - db * t
+        let coeffs = [[dc, -da], [dd, -db]];
+        let constants = [a - c, b - d];
+        if let Some((t, _u)) = cramer_2simple(coeffs, constants) {
+            Some((a + da * t, b * db * t))
+        } else {
+            return None;
+        }
     }
 }
 
@@ -116,7 +125,11 @@ fn print_coeffs(
     )
 }
 
-fn replace_col<const N: usize>(coeffs: [[BigRational; N]; N], constants: [BigRational; N], col: usize) -> [[BigRational; N]; N] {
+fn replace_col<const N: usize>(
+    coeffs: [[BigRational; N]; N],
+    constants: [BigRational; N],
+    col: usize,
+) -> [[BigRational; N]; N] {
     let mut new_coeffs = coeffs;
     for i in 0..N {
         new_coeffs[i][col] = constants[i].clone();
@@ -151,7 +164,10 @@ fn det4(a: [[BigRational; 4]; 4]) -> BigRational {
             ])
 }
 
-fn cramer_4(coeffs: [[BigRational; 4]; 4], constants: [BigRational; 4]) -> (BigRational, BigRational, BigRational, BigRational) {
+fn cramer_4(
+    coeffs: [[BigRational; 4]; 4],
+    constants: [BigRational; 4],
+) -> (BigRational, BigRational, BigRational, BigRational) {
     let d = det4(coeffs.clone());
     let x1 = det4(replace_col(coeffs.clone(), constants.clone(), 0)) / d.clone();
     let x2 = det4(replace_col(coeffs.clone(), constants.clone(), 1)) / d.clone();
@@ -161,23 +177,26 @@ fn cramer_4(coeffs: [[BigRational; 4]; 4], constants: [BigRational; 4]) -> (BigR
 }
 
 fn cramer_2simple(coeffs: [[isize; 2]; 2], constants: [isize; 2]) -> Option<(isize, isize)> {
-	let d = coeffs[0][0] * coeffs[1][1] - coeffs[0][1] * coeffs[1][0];
-	if d == 0 {
-		return None;
-	}
-	let x1 = constants[0] * coeffs[1][1] - constants[1] * coeffs[1][0] / d.clone();
-	let x2 = coeffs[0][0] * constants[1] - coeffs[0][1] * constants[0] / d.clone();
-	Some((x1, x2))
+    let d = coeffs[0][0] * coeffs[1][1] - coeffs[0][1] * coeffs[1][0];
+    if d == 0 {
+        return None;
+    }
+    let x1 = constants[0] * coeffs[1][1] - constants[1] * coeffs[1][0] / d.clone();
+    let x2 = coeffs[0][0] * constants[1] - coeffs[0][1] * constants[0] / d.clone();
+    Some((x1, x2))
 }
 
-fn cramer_2(coeffs: [[BigRational; 2]; 2], constants: [BigRational; 2]) -> Option<(BigRational, BigRational)> {
-	let d = det2(coeffs.clone());
-	if d == Ratio::from_isize(0).unwrap() {
-		return None;
-	}
-	let x1 = det2(replace_col(coeffs.clone(), constants.clone(), 0)) / d.clone();
-	let x2 = det2(replace_col(coeffs.clone(), constants.clone(), 1)) / d.clone();
-	Some((x1, x2))
+fn cramer_2(
+    coeffs: [[BigRational; 2]; 2],
+    constants: [BigRational; 2],
+) -> Option<(BigRational, BigRational)> {
+    let d = det2(coeffs.clone());
+    if d == Ratio::from_isize(0).unwrap() {
+        return None;
+    }
+    let x1 = det2(replace_col(coeffs.clone(), constants.clone(), 0)) / d.clone();
+    let x2 = det2(replace_col(coeffs.clone(), constants.clone(), 1)) / d.clone();
+    Some((x1, x2))
 }
 
 pub fn part2(input: String) -> String {
@@ -195,11 +214,11 @@ pub fn part2(input: String) -> String {
     let constants = [c1, c2, c3, c4];
     let (x, dx, y, dy) = cramer_4(coeffs, constants);
     // println!("x = {}, dx = {}, y = {}, dy = {}", x, dx, y, dy);
-	let a0 = Ratio::from_isize(vectors[0].pos.x).unwrap();
-	let da0 = Ratio::from_isize(vectors[0].vel.x).unwrap();
+    let a0 = Ratio::from_isize(vectors[0].pos.x).unwrap();
+    let da0 = Ratio::from_isize(vectors[0].vel.x).unwrap();
     let t0 = (a0 - x.clone()) / (dx - da0);
-	let b0 = Ratio::from_isize(vectors[2].pos.y).unwrap();
-	let db0 = Ratio::from_isize(vectors[2].vel.y).unwrap();
+    let b0 = Ratio::from_isize(vectors[2].pos.y).unwrap();
+    let db0 = Ratio::from_isize(vectors[2].vel.y).unwrap();
     let t1 = (b0 - y.clone()) / (dy - db0);
     let c0 = Ratio::from_isize(vectors[0].pos.z).unwrap();
     let dc0 = Ratio::from_isize(vectors[0].vel.z).unwrap();
@@ -208,11 +227,11 @@ pub fn part2(input: String) -> String {
     // This gives us the equations:
     // 1z + t0 * dz = c0 + t0 * dc0
     // 1z + t1 * dz = c1 + t1 * dc1
-	let coeffs = [
-		[Ratio::from_isize(1).unwrap(), t0.clone()],
-		[Ratio::from_isize(1).unwrap(), t1.clone()],
-	];
-	let constants = [c0 + t0 * dc0, c1 + t1 * dc1];
-	let (z, _dz) = cramer_2(coeffs, constants).unwrap();
+    let coeffs = [
+        [Ratio::from_isize(1).unwrap(), t0.clone()],
+        [Ratio::from_isize(1).unwrap(), t1.clone()],
+    ];
+    let constants = [c0 + t0 * dc0, c1 + t1 * dc1];
+    let (z, _dz) = cramer_2(coeffs, constants).unwrap();
     (x + y + z).to_string()
 }
