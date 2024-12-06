@@ -64,7 +64,7 @@ impl Tile {
 
 	fn outer_sides(&self, others: &HashMap<usize, Tile>) -> Vec<Side> {
 		self.all_edges()
-			.filter_map(|(side, s)| find_matching_side(self.id, &s, others).map(|_| side))
+			.filter_map(|(side, s)| if let Some(_) = find_matching_side(self.id, &s, others) {None} else {Some(side)})
 			.collect()
 	}
 }
@@ -198,6 +198,7 @@ pub fn part2(input: String) -> String {
 	// Top Row Middle
 	let edges = find_edges(&tiles);
 	for x in 1..9 {
+		println!("0, {}/{}", x, edges.len());
 		board[0][x] = find_next(edges.iter().map(|i| *i), &board[0][x-1].0.edge(E, &board[0][x-1].1), &[]);
 	}
 	"hi".to_owned()

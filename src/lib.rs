@@ -20,7 +20,7 @@ pub fn get_input(mod_name: &str, prefix: &str) -> String {
 #[macro_export]
 macro_rules! run_day {
     ($mod_name:ident) => {
-        run_day!($mod_name, "now")
+        run_day!($mod_name, "now");
     };
     // this macro takes an argument of "type" `ident`
     // the `ident` designator is used for variable/function names
