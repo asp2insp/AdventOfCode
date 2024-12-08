@@ -984,6 +984,21 @@ impl Point {
     pub fn dist(&self, other: &Point) -> isize {
         self.x.abs_diff(other.x) as isize + self.y.abs_diff(other.y) as isize
     }
+
+    pub fn xdist(&self, other: &Point) -> isize {
+        self.x.abs_diff(other.x) as isize
+    }
+
+    pub fn ydist(&self, other: &Point) -> isize {
+        self.y.abs_diff(other.y) as isize
+    }
+
+    /// Return true if this point is on the line passing through the other two points
+    pub fn is_on_line(&self, p1: &Point, p2: &Point) -> bool {
+        let slope1 = (p1.y - self.y) as f64 / (p1.x - self.x) as f64;
+        let slope2 = (p2.y - self.y) as f64 / (p2.x - self.x) as f64;
+        slope1 == slope2
+    }
 }
 
 #[derive(Clone, Eq, PartialEq)]
