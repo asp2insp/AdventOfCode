@@ -29,10 +29,11 @@ pub fn part1(input: String) -> String {
 }
 
 fn is_antinode2(pts: &[Point], test: Point) -> bool {
-	pts.len() > 1 && pts.contains(&test) ||
-    pts.iter().combinations(2).any(|pts| {
-        test.is_on_line(pts[0], pts[1])
-    })
+    pts.len() > 1 && pts.contains(&test)
+        || pts
+            .iter()
+            .combinations(2)
+            .any(|pts| test.is_on_line(pts[0], pts[1]))
 }
 
 pub fn part2(input: String) -> String {
@@ -59,5 +60,5 @@ fn test() {
 ............
 ............"#;
     assert_eq!("14", part1(input.to_string()));
-	assert_eq!("34", part2(input.to_string()));
+    assert_eq!("34", part2(input.to_string()));
 }
