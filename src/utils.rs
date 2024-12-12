@@ -241,7 +241,10 @@ pub trait CloneWithoutIdx {
     fn clone_without_idx(&self, i: usize) -> Self;
 }
 
-impl <T> CloneWithoutIdx for Vec<T> where T: Clone {
+impl<T> CloneWithoutIdx for Vec<T>
+where
+    T: Clone,
+{
     fn clone_without_idx(&self, i: usize) -> Self {
         let mut nv = self.clone();
         nv.remove(i);
@@ -900,6 +903,16 @@ impl Direction {
             W => 0,
         }
     }
+
+    pub fn right_hand_rule_outside(&self) -> Self {
+        use Direction::*;
+        match self {
+            N => E,
+            S => W,
+            W => N,
+            E => S,
+        }
+    }
 }
 
 impl FromStr for Direction {
@@ -1468,7 +1481,11 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn drive_iter_diagonal<'a>(&'a self, p: Point, ds: (Direction, Direction)) -> impl Iterator<Item = Point> + 'a {
+    pub fn drive_iter_diagonal<'a>(
+        &'a self,
+        p: Point,
+        ds: (Direction, Direction),
+    ) -> impl Iterator<Item = Point> + 'a {
         DriveIterDiagonal {
             dirs: ds,
             curr: Some(p),
@@ -1706,14 +1723,80 @@ impl<T> Grid<T> {
         res
     }
 
-
     // Find the set of points on the border of this contiguous area
     pub fn borders_of_contiguous_area(&self, area_pts: &FnvHashSet<Point>) -> FnvHashSet<Point> {
-        let inside = area_pts.iter()
+        use Direction::*;
+        area_pts
+            .iter()
+            .filter(|&p| {
+                [N, E, S, W]
+                    .into_iter()
+                    .any(|d| self.drive(*p, d).is_none_or(|np| !area_pts.contains(&np)))
+            })
             .cloned()
-            .filter(|&p| self.neighbors(p).all(|np| area_pts.contains(&np)))
-            .collect::<FnvHashSet<Point>>();
-        area_pts.difference(&inside).cloned().collect()
+            .collect()
+    }
+
+    // Returns a list of tuples of points along with their shared side which constitutes the border that
+    // they collectively make up
+    pub fn sides_of_contiguous_area(
+        &self,
+        area_pts: &FnvHashSet<Point>,
+    ) -> Vec<(Direction, Vec<Point>)> {
+        use Direction::*;
+        let mut borders = self.borders_of_contiguous_area(area_pts);
+        let side_fragments: FnvHashSet<(Point, Direction)> = borders
+            .into_iter()
+            .flat_map(|p| DIRECTIONS.iter().map(move |d| (p, *d)))
+            .filter(|(p, d)| self.drive(*p, *d).is_none_or(|np| !area_pts.contains(&np)))
+            .collect();
+        let clusters = self.clusters(side_fragments, |c1, c2| {
+            c1.1 == c2.1
+                && match c1.1 {
+                    N | S => c1.0.y == c2.0.y,
+                    E | W => c1.0.x == c2.0.x,
+                }
+        });
+        clusters
+            .into_iter()
+            .map(|cluster| {
+                let d = cluster.iter().next().unwrap().1;
+                (d, cluster.into_iter().map(|(p, _)| p).collect_vec())
+            })
+            .collect_vec()
+    }
+
+    fn clusters<C>(
+        &self,
+        starts: FnvHashSet<C>,
+        flood_fn: impl Fn(&C, &C) -> bool,
+    ) -> Vec<FnvHashSet<C>>
+    where
+        C: Clone + Eq + Hash + GetPoint,
+    {
+        let mut made_change = true;
+        let mut sets = starts.into_iter().map(|c| makeset! {c}).collect_vec();
+        while made_change {
+            made_change = false;
+            for i in 0..sets.len() {
+                for j in i + 1..sets.len() {
+                    if sets[i]
+                        .iter()
+                        .cartesian_product(sets[j].iter())
+                        .any(|(c1, c2)| {
+                            flood_fn(c1, c2)
+                                && self.neighbors(c1.get_point()).contains(&c2.get_point())
+                        })
+                    {
+                        let mut s2 = makeset! {};
+                        std::mem::swap(&mut s2, &mut sets[j]);
+                        sets[i].extend(s2);
+                        made_change = true;
+                    }
+                }
+            }
+        }
+        sets.into_iter().filter(|v| !v.is_empty()).collect_vec()
     }
 
     // Expand needs to return an list of (point, edge_cost)
@@ -1768,6 +1851,22 @@ impl<T> Grid<T> {
             }
         }
         f
+    }
+}
+
+pub trait GetPoint {
+    fn get_point(&self) -> Point;
+}
+
+impl GetPoint for (Direction, Point) {
+    fn get_point(&self) -> Point {
+        self.1
+    }
+}
+
+impl GetPoint for (Point, Direction) {
+    fn get_point(&self) -> Point {
+        self.0
     }
 }
 
@@ -1935,10 +2034,19 @@ impl AdjacencyList {
         AdjacencyList { edges }
     }
 
-    pub fn bfs_step(&self, curr: (Point, isize, FnvHashSet<Point>), filter: Option<&dyn Fn(&Point) -> bool>) -> Vec<(Point, isize, FnvHashSet<Point>)> {
+    pub fn bfs_step(
+        &self,
+        curr: (Point, isize, FnvHashSet<Point>),
+        filter: Option<&dyn Fn(&Point) -> bool>,
+    ) -> Vec<(Point, isize, FnvHashSet<Point>)> {
         let (curr, cost, seen) = curr;
         let mut next = Vec::new();
-        for (n, c) in self.edges.get(&curr).unwrap_or(&FnvHashMap::default()).iter() {
+        for (n, c) in self
+            .edges
+            .get(&curr)
+            .unwrap_or(&FnvHashMap::default())
+            .iter()
+        {
             if !seen.contains(n) && filter.as_ref().map_or(true, |f| f(n)) {
                 next.push((*n, cost + c, seen.clone_with(*n)));
             }
@@ -1947,19 +2055,26 @@ impl AdjacencyList {
     }
 
     pub fn add_back_edges(&mut self) {
-        let back_edges = self.edges.iter().flat_map(|(p1, p2s)| p2s.iter().map(|(p2, d)| (*p2, *p1, *d))).collect_vec();
+        let back_edges = self
+            .edges
+            .iter()
+            .flat_map(|(p1, p2s)| p2s.iter().map(|(p2, d)| (*p2, *p1, *d)))
+            .collect_vec();
         for (p2, p1, d) in back_edges {
             self.edges.entry(p2).or_default().insert(p1, d);
         }
     }
 }
 
-
 impl fmt::Debug for AdjacencyList {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for a in &self.edges {
             for b in a.1 {
-                write!(f, "\"{},{}\" -> \"{},{}\" [label={}]\n", a.0.x, a.0.y, b.0.x, b.0.y, b.1)?;
+                write!(
+                    f,
+                    "\"{},{}\" -> \"{},{}\" [label={}]\n",
+                    a.0.x, a.0.y, b.0.x, b.0.y, b.1
+                )?;
             }
         }
         Ok(())
