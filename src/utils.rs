@@ -1706,6 +1706,16 @@ impl<T> Grid<T> {
         res
     }
 
+
+    // Find the set of points on the border of this contiguous area
+    pub fn borders_of_contiguous_area(&self, area_pts: &FnvHashSet<Point>) -> FnvHashSet<Point> {
+        let inside = area_pts.iter()
+            .cloned()
+            .filter(|&p| self.neighbors(p).all(|np| area_pts.contains(&np)))
+            .collect::<FnvHashSet<Point>>();
+        area_pts.difference(&inside).cloned().collect()
+    }
+
     // Expand needs to return an list of (point, edge_cost)
     // Returns map of point => (min_cost_sum, parent)
     pub fn bfs_generic(
