@@ -1,3 +1,3 @@
 use aoc::*;
 
-run_day!(day20, "twenty_twenty");
+run_day!(day21, "twenty_twenty");

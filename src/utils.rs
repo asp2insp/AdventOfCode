@@ -1766,6 +1766,7 @@ impl<T> Grid<T> {
             .collect_vec()
     }
 
+    // Cluster items which have associated points by arbitrary predicate
     fn clusters<C>(
         &self,
         starts: FnvHashSet<C>,
@@ -1858,13 +1859,7 @@ pub trait GetPoint {
     fn get_point(&self) -> Point;
 }
 
-impl GetPoint for (Direction, Point) {
-    fn get_point(&self) -> Point {
-        self.1
-    }
-}
-
-impl GetPoint for (Point, Direction) {
+impl <T>GetPoint for (Point, T) {
     fn get_point(&self) -> Point {
         self.0
     }
