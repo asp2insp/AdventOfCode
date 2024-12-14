@@ -1025,6 +1025,12 @@ impl std::ops::Add for Point {
     }
 }
 
+impl std::ops::AddAssign for Point {
+    fn add_assign(&mut self, other: Point) {
+        *self = *self + other;
+    }
+}
+
 impl std::ops::Sub for Point {
     type Output = Point;
 
@@ -1955,6 +1961,12 @@ where
 {
     fn to_debug_string(&self) -> String {
         format!("{:?}", &self)
+    }
+}
+
+pub fn print_progress(steps: usize, every_n: usize) {
+    if steps % every_n == 0 {
+        println!("{} steps", steps);
     }
 }
 
