@@ -4,6 +4,21 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
+    {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Example (2020)",
+        "cargo": {
+            "args": [
+                "run",
+                "--example=twenty_twenty",
+            ]
+        },
+        "args": ["1", "2"],
+        "cwd": "${workspaceFolder}"
+
+    },
     
 
         {
@@ -12,7 +27,7 @@
             "name": "Debug executable 'advent-of-code'",
             "cargo": {
                 "args": [
-                    "run"
+                    "run",
                 ],
                 "filter": {
                     "kind": "bin"

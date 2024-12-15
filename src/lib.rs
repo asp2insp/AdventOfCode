@@ -28,7 +28,11 @@ macro_rules! run_day {
         mod $mod_name;
         fn main() {
             println!("Running {:?}...", stringify!($mod_name));
-            let args: std::collections::HashSet<String> = std::env::args().skip(1).collect();
+            let mut args: std::collections::HashSet<String> = std::env::args().skip(1).collect();
+            if args.is_empty() {
+                args.insert("1".to_string());
+                args.insert("2".to_string());
+            }
             let do_time = args.contains("-t") || args.contains("--time");
             let mut start_time = std::time::Instant::now();
             if args.contains("1") {
