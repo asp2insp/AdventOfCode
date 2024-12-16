@@ -278,6 +278,14 @@ where
     }
 }
 
+impl <T> CloneWith<T> for Vec<T> where T: Clone {
+    fn clone_with(&self, t: T) -> Self {
+        let mut n = self.clone();
+        n.push(t);
+        n
+    }
+}
+
 impl<T> VecSet<T>
 where
     T: std::fmt::Debug,
