@@ -90,9 +90,10 @@ pub fn part2(input: String) -> String {
             q.push_front((pos, dir.turn('R'), steps + 1000, trail.clone()));
         }
     }
-    (DIRECTIONS.clone()
-		.into_iter()
-		.flat_map(|d| best_path_to_point.get(&(end, d)))
+    (DIRECTIONS
+        .clone()
+        .into_iter()
+        .flat_map(|d| best_path_to_point.get(&(end, d)))
         .flat_map(|(_, trails)| trails.clone())
         .flat_map(|mut pl| {
             let mut v = vec![pl.pos];
@@ -104,8 +105,9 @@ pub fn part2(input: String) -> String {
         })
         .filter(|&p| p != Point::new(-1, -1))
         .collect::<FnvHashSet<Point>>()
-        .len() + 1)
-        .to_string()
+        .len()
+        + 1)
+    .to_string()
 }
 
 #[cfg(test)]

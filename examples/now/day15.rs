@@ -62,7 +62,7 @@ pub fn part2(input: String) -> String {
         .filter_map(|c| Direction::from_char(c).ok())
         .collect_vec();
     let mut robot = g.find('@').unwrap();
-	// println!("{}\n", g);
+    // println!("{}\n", g);
     g.set(robot, '.', ());
     for d in dirs {
         if let Some(target) = g.drive(robot, d) {
@@ -70,19 +70,18 @@ pub fn part2(input: String) -> String {
                 robot = target;
             } else {
                 if let Some(pushable) = find_pushable_boxes(&g, robot, d) {
-					 for p in pushable.into_iter()
-					 	.sorted_by_key(|p| match d {
-							Direction::N => -p.y,
-							Direction::S => p.y,
-							Direction::E => -p.x,
-							Direction::W => p.x,
-						}) {
-							let boxchar = g.read_pt(&p);
-							g.set(p.offset_dir(d), boxchar, ());
-							g.set(p, '.', ());
-						}
-						robot = target;
-				}
+                    for p in pushable.into_iter().sorted_by_key(|p| match d {
+                        Direction::N => -p.y,
+                        Direction::S => p.y,
+                        Direction::E => -p.x,
+                        Direction::W => p.x,
+                    }) {
+                        let boxchar = g.read_pt(&p);
+                        g.set(p.offset_dir(d), boxchar, ());
+                        g.set(p, '.', ());
+                    }
+                    robot = target;
+                }
             }
         }
         // g.set(robot, '@', ());
@@ -100,7 +99,7 @@ fn find_pushable_boxes(g: &Grid<()>, robot: Point, d: Direction) -> Option<FnvHa
     let mut boxes = makeset!(robot.offset_dir(d));
     let mut prev_size = 0;
     while prev_size != boxes.len() {
-		prev_size = boxes.len();
+        prev_size = boxes.len();
         let mut b2 = makeset!();
         for b in boxes {
             let mut v = vec![b];
@@ -165,10 +164,9 @@ fn test_small() {
     assert_eq!("2028", part1(s.to_string()));
 }
 
-
 #[test]
 fn test_wide_small() {
-	let s = r#"#######
+    let s = r#"#######
 #...#.#
 #.....#
 #..OO@#
@@ -177,5 +175,5 @@ fn test_wide_small() {
 #######
 
 <vv<<^^<<^^"#;
-	assert_eq!("618", part2(s.to_string()));
+    assert_eq!("618", part2(s.to_string()));
 }

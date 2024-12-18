@@ -49,29 +49,29 @@ fn len(mut u: usize) -> usize {
 #[cached]
 fn count_children(start: usize, gen: usize) -> usize {
     if gen == 0 {
-		// print!("{}, ", start);
+        // print!("{}, ", start);
         return 1;
     } else if start == 0 {
-		return count_children(1, gen - 1);
-	}
+        return count_children(1, gen - 1);
+    }
     let l = len(start) as u32;
     if l % 2 == 1 {
         return count_children(start * 2024, gen - 1);
     } else {
         let div = 10u64.pow(l / 2);
-		// println!("{} -> {}, {}", start, start / (div as usize), start % (div as usize));
+        // println!("{} -> {}, {}", start, start / (div as usize), start % (div as usize));
         return count_children(start / (div as usize), gen - 1)
             + count_children(start % (div as usize), gen - 1);
     }
 }
 
 fn count_children_for_all(nums: &[usize], gen: usize) -> usize {
-	let mut size = 0;
+    let mut size = 0;
     for &num in nums {
         size += count_children(num, gen)
     }
-	// println!("");
-	size
+    // println!("");
+    size
 }
 
 pub fn part2(input: String) -> String {
@@ -79,23 +79,22 @@ pub fn part2(input: String) -> String {
     count_children_for_all(&nums, 75).to_string()
 }
 
-
 #[test]
 fn test() {
-	assert_eq!(1, count_children(0, 1));
-	assert_eq!(1, count_children(1, 1));
-	assert_eq!(1, count_children(231, 1));
-	assert_eq!(2, count_children(22, 1));
+    assert_eq!(1, count_children(0, 1));
+    assert_eq!(1, count_children(1, 1));
+    assert_eq!(1, count_children(231, 1));
+    assert_eq!(2, count_children(22, 1));
 }
 
 #[test]
 fn test2() {
-	let v = vec![125, 17];
-	assert_eq!(3, count_children_for_all(&v, 1));
-	assert_eq!(4, count_children_for_all(&v, 2));
-	assert_eq!(5, count_children_for_all(&v, 3));
-	assert_eq!(9, count_children_for_all(&v, 4));
-	assert_eq!(13, count_children_for_all(&v, 5));
-	assert_eq!(22, count_children_for_all(&v, 6));
-	assert_eq!(55312, count_children_for_all(&v, 25));
+    let v = vec![125, 17];
+    assert_eq!(3, count_children_for_all(&v, 1));
+    assert_eq!(4, count_children_for_all(&v, 2));
+    assert_eq!(5, count_children_for_all(&v, 3));
+    assert_eq!(9, count_children_for_all(&v, 4));
+    assert_eq!(13, count_children_for_all(&v, 5));
+    assert_eq!(22, count_children_for_all(&v, 6));
+    assert_eq!(55312, count_children_for_all(&v, 25));
 }

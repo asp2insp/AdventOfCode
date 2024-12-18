@@ -37,13 +37,13 @@ fn count_paths(g: &Grid<usize>, start: Point) -> usize {
 }
 
 pub fn part2(input: String) -> String {
-	let g = Grid::new_with(&input, |c| c.to_digit(10).unwrap() as usize);
+    let g = Grid::new_with(&input, |c| c.to_digit(10).unwrap() as usize);
     let trailheads = g.find_all('0');
     trailheads
         .into_iter()
         .map(|th| count_paths(&g, th))
-		.sum::<usize>()
-		.to_string()
+        .sum::<usize>()
+        .to_string()
 }
 
 #[cfg(test)]

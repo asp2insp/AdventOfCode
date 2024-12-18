@@ -76,7 +76,7 @@ pub fn part2(input: String) -> String {
             b.step((WIDTH, HEIGHT));
         }
         steps += 1;
-		// print_progress(steps, 1000);
+        // print_progress(steps, 1000);
     }
     steps.to_string()
 }
