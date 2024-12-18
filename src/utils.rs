@@ -1669,7 +1669,7 @@ impl<T> Grid<T> {
         &self,
         pt1: Point,
         pt2: Point,
-        weight: Option<impl Fn(Point) -> isize>,
+        weight: Option<&dyn Fn(Point) -> isize>,
     ) -> (isize, Vec<Point>) {
         self.try_dfs_path(pt1, pt2, weight).unwrap()
     }
@@ -1678,7 +1678,7 @@ impl<T> Grid<T> {
         &self,
         pt1: Point,
         pt2: Point,
-        weight: Option<impl Fn(Point) -> isize>,
+        weight: Option<&dyn Fn(Point) -> isize>,
     ) -> Option<(isize, Vec<Point>)> {
         let mut results = self.dfs_path_bulk(pt1, makeset! {pt2}, weight);
         results.remove(&pt2)
