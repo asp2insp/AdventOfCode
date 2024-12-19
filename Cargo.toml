@@ -8,7 +8,7 @@ version = "0.1.0"
 debug = true
 
 [dependencies]
-cached = "0.54.0"
+cached = {version = "0.54.0", features = ["proc_macro"]}
 chrono = "0.4.23"
 cute = "0.3.0"
 image = "0.24.5"
