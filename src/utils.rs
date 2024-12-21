@@ -863,6 +863,17 @@ impl Direction {
         }
     }
 
+    pub fn as_arrow_char(&self) -> char {
+        use Direction::*;
+
+        match self {
+            N => '^',
+            S => 'v',
+            E => '>',
+            W => '<',
+        }
+    }
+
     pub fn turn(&self, lr: char) -> Direction {
         use Direction::*;
 
