@@ -35,7 +35,6 @@ fn reps(v: &[char]) -> usize {
         if *c == last {
             count += 1;
         } else {
-            count = 0;
             last = *c;
         }
     }
@@ -70,7 +69,7 @@ impl Bot {
             }
             if self.pad[y][x] == target {
                 let is_new_shortest = path.len() < moves.len()
-                    || path.len() == moves.len() && reps(&path) < reps(&moves);
+                    || (path.len() == moves.len() && reps(&path) > reps(&moves));
                 if is_new_shortest {
                     moves = path;
                     dest = (x, y);
