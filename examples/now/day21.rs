@@ -520,5 +520,4 @@ mod tests {
             "v<<A>>^A<A>AvA<^AA>A<vAAA>^A"
         );
     }
-
 }

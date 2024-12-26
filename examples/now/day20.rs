@@ -36,14 +36,14 @@ pub fn part2(input: String) -> String {
         for (p2, rem) in bfs_reachable(&path, *point, 20) {
             if let Some((dest_cost, _)) = path.get(&p2) {
                 if cost.saturating_sub(*dest_cost) + rem as isize > 20 {
-					let entry = saves.entry((*point, p2)).or_insert(0);
-					let max = (*entry).max(cost.saturating_sub(*dest_cost) + rem as isize - 20);
-					*entry = max;
+                    let entry = saves.entry((*point, p2)).or_insert(0);
+                    let max = (*entry).max(cost.saturating_sub(*dest_cost) + rem as isize - 20);
+                    *entry = max;
                 }
             }
         }
     }
-	let cutoff = if g.width() < 20 { 50 } else { 100 };
+    let cutoff = if g.width() < 20 { 50 } else { 100 };
     // println!("{:?}", saves.values().filter(|&&x| x >= cutoff).counting_set());
     saves
         .into_values()
@@ -52,7 +52,11 @@ pub fn part2(input: String) -> String {
         .to_string()
 }
 
-fn bfs_reachable(path: &FnvHashMap<Point, (isize, Point)>, start: Point, steps_remaining: usize) -> FnvHashSet<(Point, usize)> {
+fn bfs_reachable(
+    path: &FnvHashMap<Point, (isize, Point)>,
+    start: Point,
+    steps_remaining: usize,
+) -> FnvHashSet<(Point, usize)> {
     let mut reachable = makeset!();
     let mut visited = makeset!();
     let mut queue = VecDeque::new();
@@ -67,9 +71,9 @@ fn bfs_reachable(path: &FnvHashMap<Point, (isize, Point)>, start: Point, steps_r
         }
         for d in DIRECTIONS {
             let p2 = point.offset_dir(d);
-			if path.contains_key(&p2) {
-            	reachable.insert((p2, steps_remaining - 1));
-			}
+            if path.contains_key(&p2) {
+                reachable.insert((p2, steps_remaining - 1));
+            }
             queue.push_back((p2, steps_remaining - 1));
         }
     }
@@ -98,6 +102,6 @@ mod tests {
 #...#...#...###
 ###############"#;
         assert_eq!(part1(input.to_string()), "44");
-		assert_eq!(part2(input.to_string()), "285");
+        assert_eq!(part2(input.to_string()), "285");
     }
 }

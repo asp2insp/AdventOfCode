@@ -1,6 +1,6 @@
 use cached::proc_macro::cached;
-use itertools::Itertools;
 use cached::UnboundCache;
+use itertools::Itertools;
 
 fn possible(patterns: &[&str], desired: &str) -> bool {
     if desired.is_empty() {
