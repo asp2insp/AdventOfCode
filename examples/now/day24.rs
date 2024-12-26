@@ -1,8 +1,7 @@
-use aoc::{dict, parse, utils::gimme_usizes_once};
+use aoc::{dict, makeset, parse, utils::gimme_usizes_once};
 use fnv::{FnvHashMap, FnvHashSet};
 use itertools::Itertools;
 use regex::Regex;
-use take_until::TakeUntilExt;
 
 enum Op {
     And,
@@ -63,11 +62,20 @@ fn parse_initial(input: &str) -> FnvHashMap<String, usize> {
 fn run_until_values(
     wires: &mut FnvHashMap<String, usize>,
     gates: &[Gate],
-    _affected: &FnvHashMap<String, Vec<usize>>,
-    targets: &FnvHashSet<String>,
+    affected: &FnvHashMap<String, Vec<usize>>,
+    target_prefix: char,
 ) {
-    while !targets.iter().all(|t| wires.contains_key(t)) {
-        for gate in gates {
+    let mut aff = FnvHashSet::default();
+    aff.extend(0..gates.len());
+    while !gates
+        .iter()
+        .map(|g| &g.output)
+        .filter(|o| o.starts_with(target_prefix))
+        .all(|t| wires.contains_key(t))
+    {
+        let mut aff2 = FnvHashSet::default();
+        for gate_idx in aff {
+            let gate = &gates[gate_idx];
             if wires.contains_key(&gate.output) {
                 continue;
             }
@@ -85,28 +93,64 @@ fn run_until_values(
                 Op::Xor => input1 ^ input2,
             };
             wires.insert(gate.output.clone(), output);
+            aff2.extend(affected.get(&gate.output).unwrap_or(&Vec::new()));
         }
+        aff = aff2;
     }
 }
 
 pub fn part1(input: String) -> String {
     let mut wires = parse_initial(&input);
     let (gates, affected) = parse_gates(&input);
-    let targets = gates
-        .iter()
-        .map(|g| &g.output)
-        .filter(|o| o.starts_with('z'))
-        .cloned()
-        .collect::<FnvHashSet<_>>();
-    run_until_values(&mut wires, &gates, &affected, &targets);
-    let binary = targets
-        .into_iter()
-        .sorted_by(|a, b| gimme_usizes_once(b)[0].cmp(&gimme_usizes_once(a)[0]))
-        .map(|t| wires[&t].to_string())
-        .join("");
-	format!("{}", usize::from_str_radix(&binary, 2).unwrap())
+    run_until_values(&mut wires, &gates, &affected, 'z');
+    wires_to_num(&wires, "z").to_string()
+}
+
+fn wires_to_num(wires: &FnvHashMap<String, usize>, prefix: &str) -> usize {
+    usize::from_str_radix(
+        &wires
+            .iter()
+            .filter(|(k, _)| k.starts_with(prefix))
+            .sorted_by(|a, b| gimme_usizes_once(b.0)[0].cmp(&gimme_usizes_once(a.0)[0]))
+            .map(|(_, v)| v.to_string())
+            .join(""),
+        2,
+    )
+    .unwrap()
 }
 
 pub fn part2(input: String) -> String {
+    let mut wires = parse_initial(&input);
+    let x = wires_to_num(&wires, "x");
+    let y = wires_to_num(&wires, "y");
+    let answer = format!("{:#b}", x + y).chars().rev().collect_vec();
+    let (gates, affected) = parse_gates(&input);
+    run_until_values(&mut wires, &gates, &affected, 'z');
+    let current = format!("{:#b}", wires_to_num(&wires, "z"))
+        .chars()
+        .rev()
+        .collect_vec();
+    let mut mismatches = answer
+        .iter()
+        .enumerate()
+        .zip(&current)
+        .filter(|((i, a), c)| a != c)
+        .map(|((i, _), _)| format!("z{:#02}", i))
+        .collect_vec();
+    let mut possibles = makeset!();
+    while let Some(n) = mismatches.pop() {
+        if n.starts_with('x') || n.starts_with('y') {
+            continue;
+        }
+        for g in &gates {
+            if g.output == n {
+                mismatches.push(g.input1.clone());
+                mismatches.push(g.input2.clone());
+            }
+        }
+        possibles.insert(n);
+    }
+    println!("{:?}", possibles.len());
+    println!("{}\n{}", answer.iter().join(""), current.iter().join(""));
     "part2".to_string()
 }
