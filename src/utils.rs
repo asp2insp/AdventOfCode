@@ -278,7 +278,10 @@ where
     }
 }
 
-impl <T> CloneWith<T> for Vec<T> where T: Clone {
+impl<T> CloneWith<T> for Vec<T>
+where
+    T: Clone,
+{
     fn clone_with(&self, t: T) -> Self {
         let mut n = self.clone();
         n.push(t);
@@ -449,7 +452,7 @@ fn char_set() {
 
 /// A better version of half-inclusive range (includes bottom but not top)
 /// supporting algebraic operations.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BetterRange {
     pub bottom: usize,
     pub top: usize,
@@ -490,6 +493,7 @@ impl BetterRange {
         i >= self.bottom && i < self.top
     }
 
+    /// Returns the intersection of this range and the other range if they overlap
     pub fn intersection(&self, other: &BetterRange) -> Option<BetterRange> {
         if self.bottom >= other.top || self.top <= other.bottom {
             None
@@ -498,6 +502,29 @@ impl BetterRange {
                 bottom: max(self.bottom, other.bottom),
                 top: min(self.top, other.top),
             })
+        }
+    }
+
+    /// Returns the union of this range and the other range if they overlap
+    pub fn union(&self, other: &BetterRange) -> Option<BetterRange> {
+        if self.bottom >= other.top || self.top <= other.bottom {
+            None
+        } else {
+            Some(BetterRange {
+                bottom: min(self.bottom, other.bottom),
+                top: max(self.top, other.top),
+            })
+        }
+    }
+
+    /// Attempt to include the other one in self, but only if they overlap
+    /// Returns true if the range was expanded as a result
+    pub fn try_expand(&mut self, other: &BetterRange) -> bool {
+        if let Some(u) = self.union(other) {
+            *self = u;
+            true
+        } else {
+            false
         }
     }
 
@@ -537,7 +564,7 @@ impl BetterRange {
         self.bottom >= self.top
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=usize> {
+    pub fn iter(&self) -> impl Iterator<Item = usize> {
         self.bottom..self.top
     }
 }
@@ -779,7 +806,7 @@ pub fn gimme_nums(s: &str) -> Vec<Vec<isize>> {
 
 pub fn gimme_usizes_once(l: &str) -> Vec<usize> {
     use regex::*;
-    let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+    let re = Regex::new(r"(-?\d+)([^-\d]*)").unwrap();
     re.captures_iter(l.trim())
         .map(|c| parse!(c[1], usize))
         .collect::<Vec<usize>>()
@@ -791,7 +818,7 @@ pub fn is_digit(c: &char) -> bool {
 
 pub fn parse_nums_from_lines<'a>(lines: impl Iterator<Item = &'a str>) -> Vec<Vec<isize>> {
     use regex::*;
-    let re = Regex::new(r"([-\d]+)([^-\d]*)").unwrap();
+    let re = Regex::new(r"(-?\d+)([^-\d]*)").unwrap();
     lines
         .map(|l| {
             re.captures_iter(l.trim())
@@ -1411,6 +1438,26 @@ impl<T> Grid<T> {
             .into_iter()
     }
 
+    pub fn cols(&self) -> impl DoubleEndedIterator<Item = isize> {
+        self.map
+            .keys()
+            .map(|xy| xy.x)
+            .sorted()
+            .dedup()
+            .collect_vec()
+            .into_iter()
+    }
+
+    pub fn rows(&self) -> impl DoubleEndedIterator<Item = isize> {
+        self.map
+            .keys()
+            .map(|xy| xy.y)
+            .sorted()
+            .dedup()
+            .collect_vec()
+            .into_iter()
+    }
+
     pub fn find(&self, needle: char) -> Option<Point> {
         self.iter_chars()
             .find(|(p, c)| *c == needle)
@@ -1910,7 +1957,7 @@ pub trait GetPoint {
     fn get_point(&self) -> Point;
 }
 
-impl <T>GetPoint for (Point, T) {
+impl<T> GetPoint for (Point, T) {
     fn get_point(&self) -> Point {
         self.0
     }
