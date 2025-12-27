@@ -536,6 +536,10 @@ impl BetterRange {
     pub fn is_empty(&self) -> bool {
         self.bottom >= self.top
     }
+
+    pub fn iter(&self) -> impl Iterator<Item=usize> {
+        self.bottom..self.top
+    }
 }
 
 pub fn div_up(a: usize, b: usize) -> usize {
