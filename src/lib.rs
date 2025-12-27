@@ -35,10 +35,14 @@ macro_rules! run_day {
             }
             let do_time = args.contains("-t") || args.contains("--time");
             let mut start_time = std::time::Instant::now();
+            let mut input_name = stringify!($mod_name).to_string();
+            if args.contains("-e") {
+                input_name += "_example";
+            }
             if args.contains("1") {
                 println!(
                     "1> {:?}",
-                    $mod_name::part1(get_input(stringify!($mod_name), $prefix))
+                    $mod_name::part1(get_input(&input_name, $prefix))
                 );
                 if do_time {
                     println!("Part 1 took {} ms", start_time.elapsed().as_millis());
@@ -48,7 +52,7 @@ macro_rules! run_day {
                 start_time = std::time::Instant::now();
                 println!(
                     "2> {:?}",
-                    $mod_name::part2(get_input(stringify!($mod_name), $prefix))
+                    $mod_name::part2(get_input(&input_name, $prefix))
                 );
                 if do_time {
                     println!("Part 2 took {} ms", start_time.elapsed().as_millis());
