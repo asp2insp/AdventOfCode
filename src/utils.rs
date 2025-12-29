@@ -601,6 +601,13 @@ impl P3 {
         (self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs()
     }
 
+    pub fn real_dist(&self, other: &P3) -> f64 {
+        ((self.x - other.x).abs().pow(2) as f64
+            + (self.y - other.y).abs().pow(2) as f64
+            + (self.z - other.z).abs().pow(2) as f64)
+            .sqrt()
+    }
+
     pub fn euclidian_dist_squared(&self, other: &P3) -> isize {
         (self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)
     }
@@ -1056,11 +1063,31 @@ impl Point {
         self.y.abs_diff(other.y) as isize
     }
 
+    pub fn real_dist(&self, other: &Point) -> f64 {
+        (self.x.abs_diff(other.x).pow(2) as f64 + self.y.abs_diff(other.y).pow(2) as f64).sqrt()
+    }
+
     /// Return true if this point is on the line passing through the other two points
     pub fn is_on_line(&self, p1: &Point, p2: &Point) -> bool {
         let slope1 = (p1.y - self.y) as f64 / (p1.x - self.x) as f64;
         let slope2 = (p2.y - self.y) as f64 / (p2.x - self.x) as f64;
         slope1 == slope2
+    }
+
+    pub fn xrange(&self, other: &Point) -> impl Iterator<Item = isize> {
+        if self.x < other.x {
+            (self.x..=other.x)
+        } else {
+            (other.x..=self.x)
+        }
+    }
+
+    pub fn yrange(&self, other: &Point) -> impl Iterator<Item = isize> {
+        if self.y < other.y {
+            (self.y..=other.y)
+        } else {
+            (other.y..=self.y)
+        }
     }
 }
 
