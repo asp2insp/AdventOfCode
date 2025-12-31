@@ -2083,6 +2083,8 @@ pub fn string_window(
 
 pub trait Traversible<T> {
     fn idx(self, _: T) -> usize;
+
+    fn contains_all_ordered(self, _: &[T]) -> bool;
 }
 
 impl<T, C> Traversible<T> for C
@@ -2092,6 +2094,21 @@ where
 {
     fn idx(self, needle: T) -> usize {
         self.into_iter().position(|e| e == needle).unwrap()
+    }
+
+    fn contains_all_ordered(self, needles: &[T]) -> bool {
+        let mut i = 0;
+        let mut iter = self.into_iter();
+        while i < needles.len() {
+            if let Some(n) = iter.next() {
+                if n == needles[i] {
+                    i += 1;
+                }
+            } else {
+                break;
+            }
+        }
+        i == needles.len()
     }
 }
 

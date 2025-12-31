@@ -27,3 +27,5 @@ permutohedron = "0.2.4"
 fnv = "1.0.7"
 take-until = "0.1.0"
 smallstr = "0.3.0"
+nalgebra = "0.34.1"
+z3 = {version = "0.19.7"}
