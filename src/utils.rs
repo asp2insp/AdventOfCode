@@ -2224,6 +2224,196 @@ impl fmt::Debug for AdjacencyList {
     }
 }
 
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub struct Tile<T> {
+    // Row-major contents
+    pub contents: Vec<Vec<T>>,
+}
+
+impl<T> Tile<T>
+where
+    T: Clone,
+{
+    pub fn new(rows: usize, cols: usize, elem: T) -> Tile<T> {
+        Tile {
+            contents: vec![vec![elem.clone(); cols]; rows],
+        }
+    }
+
+    pub fn row_indices(&self) -> impl Iterator<Item=usize> {
+        0..self.contents.len()
+    }
+
+    pub fn col_indices(&self) -> impl Iterator<Item=usize> {
+        0..self.contents[0].len()
+    }
+
+    pub fn all_offsets(&self) -> impl Iterator<Item=(usize, usize)> {
+        self.row_indices().cartesian_product(0..self.contents[0].len())
+    }
+
+    pub fn iter_values(&self) -> impl Iterator<Item=&T> {
+        self.contents.iter().flat_map(|v| v.iter())
+    }
+
+    pub fn count(&self, t: T) -> usize where T: PartialEq {
+        self.iter_values().filter(|i| **i == t).count()
+    }
+
+    /// Check if the other tile will fit completely within this tile at the given offset.
+    /// Returns true if all elements of other would be within bounds when placed at offset.
+    pub fn fits_at_offset(&self, other: &Tile<T>, offset: (usize, usize)) -> bool {
+        if self.contents.is_empty() || other.contents.is_empty() {
+            return other.contents.is_empty(); // Empty tile always fits, non-empty never fits in empty
+        }
+
+        let (row_offset, col_offset) = offset;
+        let other_rows = other.contents.len();
+        let other_cols = other.contents[0].len();
+
+        let self_rows = self.contents.len();
+        let self_cols = self.contents[0].len();
+
+        // Check if the other tile extends beyond our bounds
+        row_offset + other_rows <= self_rows && col_offset + other_cols <= self_cols
+    }
+
+    /// Generate all 12 unique orientations of this tile (rotations and flips).
+    /// Returns a vector containing:
+    /// - 4 rotations (0°, 90°, 180°, 270°)
+    /// - 4 flipped rotations (flip_x then 0°, 90°, 180°, 270°)
+    /// - 4 flipped rotations (flip_y then 0°, 90°, 180°, 270°)
+    pub fn all_orientations(&self) -> Vec<Tile<T>> {
+        let mut orientations = Vec::with_capacity(8);
+
+        // Original and its rotations (0°, 90°, 180°, 270°)
+        let mut curr = self.clone();
+        for _ in 0..4 {
+            orientations.push(curr.clone());
+            curr = curr.rotate_90();
+        }
+
+        // Flipped and its rotations
+        curr = self.flip_x();
+        for _ in 0..4 {
+            orientations.push(curr.clone());
+            curr = curr.rotate_90();
+        }
+
+        curr = self.flip_y();
+        for _ in 0..4 {
+            orientations.push(curr.clone());
+            curr = curr.rotate_90();
+        }
+
+        orientations
+    }
+
+    // Reverse the tile on rows (flip horizontally)
+    pub fn flip_x(&self) -> Tile<T> {
+        Tile {
+            contents: self
+                .contents
+                .iter()
+                .map(|row| row.iter().rev().cloned().collect())
+                .collect(),
+        }
+    }
+
+    // Reverse the tile on columns (flip vertically)
+    pub fn flip_y(&self) -> Tile<T> {
+        Tile {
+            contents: self.contents.iter().rev().cloned().collect(),
+        }
+    }
+
+    // Rotate 90deg clockwise
+    pub fn rotate_90(&self) -> Tile<T> {
+        if self.contents.is_empty() {
+            return Tile { contents: vec![] };
+        }
+
+        let rows = self.contents.len();
+        let cols = self.contents[0].len();
+
+        let mut new_contents = Vec::with_capacity(cols);
+
+        // For each column in the original (left to right),
+        // create a new row by reading that column from bottom to top
+        for col_idx in 0..cols {
+            let mut new_row = Vec::with_capacity(rows);
+            for row_idx in (0..rows).rev() {
+                new_row.push(self.contents[row_idx][col_idx].clone());
+            }
+            new_contents.push(new_row);
+        }
+
+        Tile {
+            contents: new_contents,
+        }
+    }
+
+    /// Combine this tile with another by overlaying the other tile at the given offset.
+    /// The offset is (row, col) from the top-left corner (0, 0).
+    /// If a combining function is provided, it will be called with (lhs_elem, rhs_elem) to
+    /// resolve conflicts. If no function is provided, rhs elements take precedence.
+    /// Returns a new tile the same size as self.
+    pub fn overlay_at_offset<F>(
+        &self,
+        other: &Tile<T>,
+        offset: (usize, usize),
+        combine_fn: Option<F>,
+    ) -> Option<Tile<T>>
+    where
+        F: Fn(T, T) -> Option<T>,
+    {
+        let (row_offset, col_offset) = offset;
+        let mut new_contents = self.contents.clone();
+
+        // Overlay other tile onto new_contents at the given offset
+        for (other_row_idx, other_row) in other.contents.iter().enumerate() {
+            let target_row_idx = row_offset + other_row_idx;
+
+            // Skip if outside bounds of self
+            if target_row_idx >= new_contents.len() {
+                break;
+            }
+
+            for (other_col_idx, other_val) in other_row.iter().enumerate() {
+                let target_col_idx = col_offset + other_col_idx;
+
+                // Skip if outside bounds of self
+                if target_col_idx >= new_contents[target_row_idx].len() {
+                    break;
+                }
+
+                // Apply combining function or use rhs by default
+                new_contents[target_row_idx][target_col_idx] = if let Some(ref f) = combine_fn {
+                    f(new_contents[target_row_idx][target_col_idx].clone(), other_val.clone())?
+                } else {
+                    other_val.clone()
+                };
+            }
+        }
+
+        Some(Tile {
+            contents: new_contents,
+        })
+    }
+}
+
+impl <T> std::fmt::Display for Tile<T> where T: std::fmt::Display {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for r in &self.contents {
+            for c in r {
+                write!(f, "{}", c)?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
